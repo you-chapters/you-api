@@ -1,6 +1,9 @@
 PYTHON = .venv/Scripts/python
 TABLE_NAME = entries
 
+requirements:
+	uv export --no-dev --output-file app/requirements.txt
+
 run:
 	REPOSITORY_TYPE=dynamodb DYNAMODB_TABLE_NAME=test_$(TABLE_NAME) $(PYTHON) -m uvicorn app.main:app --reload
 
