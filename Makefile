@@ -1,6 +1,10 @@
 PYTHON = .venv/Scripts/python
 TABLE_NAME = entries
 
+ifeq ($(OS),Windows_NT)
+	SHELL := C:/Program Files/Git/bin/bash.exe
+endif
+
 requirements:
 	uv export --no-dev --output-file app/requirements.txt
 

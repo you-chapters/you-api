@@ -1,4 +1,5 @@
 @baseUrl = http://localhost:8000
+@entry_id = 139f531d-636b-47b0-990f-043952dac5c6
 
 ### Create entry
 POST {{baseUrl}}/entries
@@ -6,11 +7,11 @@ Content-Type: application/json
 
 {
   "user_id": "user-1",
-  "entry": "Today was a productive day."
+  "entry": "Yesterday was a productive day."
 }
 
 ### Get entry
 GET {{baseUrl}}/entries/{{entry_id}}
 
 ### List entries by user
-GET {{baseUrl}}/entries?user_id=user-1
+GET {{baseUrl}}/entries

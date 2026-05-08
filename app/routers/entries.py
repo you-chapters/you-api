@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.dependencies import get_service
+from app.dependencies import get_current_user_id, get_service
 from app.models.entry import CreateEntryRequest, Entry
 from app.services.entry_service import EntryService
 
@@ -13,7 +13,7 @@ def create_entry(request: CreateEntryRequest, service: EntryService = Depends(ge
 
 
 @router.get("/{entry_id}", response_model=Entry)
-def get_entry(entry_id: str, user_id: str, service: EntryService = Depends(get_service)) -> Entry:
+def get_entry(entry_id: str, user_id: str = Depends(get_current_user_id), service: EntryService = Depends(get_service)) -> Entry:
     entry = service.get_entry(user_id, entry_id)
     if entry is None:
         raise HTTPException(status_code=404, detail="Entry not found")
@@ -21,5 +21,5 @@ def get_entry(entry_id: str, user_id: str, service: EntryService = Depends(get_s
 
 
 @router.get("", response_model=list[Entry])
-def list_entries(user_id: str, service: EntryService = Depends(get_service)) -> list[Entry]:
+def list_entries(user_id: str = Depends(get_current_user_id), service: EntryService = Depends(get_service)) -> list[Entry]:
     return service.list_entries(user_id)
