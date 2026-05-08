@@ -13,8 +13,8 @@ def create_entry(request: CreateEntryRequest, service: EntryService = Depends(ge
 
 
 @router.get("/{entry_id}", response_model=Entry)
-def get_entry(entry_id: str, service: EntryService = Depends(get_service)) -> Entry:
-    entry = service.get_entry(entry_id)
+def get_entry(entry_id: str, user_id: str, service: EntryService = Depends(get_service)) -> Entry:
+    entry = service.get_entry(user_id, entry_id)
     if entry is None:
         raise HTTPException(status_code=404, detail="Entry not found")
     return entry
