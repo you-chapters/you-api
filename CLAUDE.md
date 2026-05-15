@@ -27,6 +27,8 @@ cd infra && cdk deploy --all
 
 Routes → Service → Repository (ABC). Two implementations: `InMemoryEntryRepository` (local) and `DynamoDBEntryRepository` (prod). Selected via `REPOSITORY_TYPE` env var; singleton via `@lru_cache`.
 
+Authentication: API Gateway Cognito User Pool authorizer validates JWTs. `get_current_user_id(request)` in `app/dependencies.py` extracts `sub` from `event["requestContext"]["authorizer"]["claims"]["sub"]`. Falls back to `DEV_USER_ID` env var for local dev. User ID is never accepted from request bodies.
+
 ## Conventions
 
 - No comments on obvious code

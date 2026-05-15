@@ -2,7 +2,6 @@ from pydantic import BaseModel, Field
 
 
 class CreateEntryRequest(BaseModel):
-    user_id: str = Field(max_length=256)
     entry: str = Field(max_length=10_000)
 
 
