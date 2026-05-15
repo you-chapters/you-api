@@ -9,9 +9,9 @@ class EntryService:
     def __init__(self, repository: EntryRepository) -> None:
         self._repository = repository
 
-    def create_entry(self, request: CreateEntryRequest) -> Entry:
+    def create_entry(self, user_id: str, request: CreateEntryRequest) -> Entry:
         entry = Entry(
-            user_id=request.user_id,
+            user_id=user_id,
             timestamp=datetime.now(timezone.utc).isoformat(),
             entry_id=str(uuid.uuid4()),
             entry=request.entry,

@@ -8,8 +8,8 @@ router = APIRouter(prefix="/entries", tags=["entries"])
 
 
 @router.post("", response_model=Entry, status_code=201)
-def create_entry(request: CreateEntryRequest, service: EntryService = Depends(get_service)) -> Entry:
-    return service.create_entry(request)
+def create_entry(request: CreateEntryRequest, user_id: str = Depends(get_current_user_id), service: EntryService = Depends(get_service)) -> Entry:
+    return service.create_entry(user_id, request)
 
 
 @router.get("/{entry_id}", response_model=Entry)

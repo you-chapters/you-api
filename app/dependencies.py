@@ -1,6 +1,8 @@
 import os
 from functools import lru_cache
 
+from fastapi import Request
+
 from app.repositories.entry_repository import EntryRepository
 from app.repositories.in_memory_entry_repository import InMemoryEntryRepository
 from app.services.entry_service import EntryService
@@ -22,6 +24,9 @@ def get_service() -> EntryService:
     return EntryService(_repository())
 
 
-def get_current_user_id() -> str:
-    # TODO: replace with real auth (extract from JWT/session)
-    return "user-1"
+def get_current_user_id(request: Request) -> str:
+    event = request.scope.get("aws.event", {})
+    try:
+        return event["requestContext"]["authorizer"]["claims"]["sub"]
+    except (KeyError, TypeError):
+        return os.getenv("DEV_USER_ID", "dev-user")
