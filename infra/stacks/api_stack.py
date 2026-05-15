@@ -42,6 +42,11 @@ class ApiStack(Stack):
             self,
             "YouApiRestApi",
             handler=fn,
+            default_cors_preflight_options=apigw.CorsOptions(
+                allow_origins=["https://you.havryliuk.com", "http://localhost:5173"],
+                allow_methods=apigw.Cors.ALL_METHODS,
+                allow_headers=apigw.Cors.DEFAULT_HEADERS,
+            ),
             default_method_options=apigw.MethodOptions(
                 authorization_type=apigw.AuthorizationType.COGNITO,
                 authorizer=authorizer,
