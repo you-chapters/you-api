@@ -18,8 +18,8 @@ class ApiStack(Stack):
         fn = PythonFunction(
             self,
             "YouApiFunction",
-            entry=str(REPO_ROOT / "app"),
-            index="handler.py",
+            entry=str(REPO_ROOT),
+            index="app/handler.py",
             handler="handler",
             runtime=lambda_.Runtime.PYTHON_3_13,
             memory_size=512,

@@ -39,8 +39,8 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v5
 
-      - name: Generate app/requirements.txt
-        run: uv export --no-dev --output-file app/requirements.txt
+      - name: Generate requirements.txt
+        run: uv export --no-dev --output-file requirements.txt
 
       - name: Install CDK dependencies
         run: pip install -r infra/requirements.txt
