@@ -43,6 +43,7 @@ class ApiStack(Stack):
             "YouApiRestApi",
             handler=fn,
             deploy_options=apigw.StageOptions(stage_name="api"),
+            endpoint_types=[apigw.EndpointType.REGIONAL],
             default_cors_preflight_options=apigw.CorsOptions(
                 allow_origins=["https://you.havryliuk.com", "http://localhost:5173"],
                 allow_methods=apigw.Cors.ALL_METHODS,
