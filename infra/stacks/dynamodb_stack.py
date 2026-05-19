@@ -14,6 +14,12 @@ class DynamoDBStack(Stack):
             removal_policy=RemovalPolicy.RETAIN,
         )
 
-        self.table = dynamodb.Table(self, "EntriesTable", table_name="entries", **table_kwargs)
+        self.table = dynamodb.Table(
+            self,
+            "EntriesTable",
+            table_name="entries",
+            stream=dynamodb.StreamViewType.NEW_IMAGE,
+            **table_kwargs,
+        )
 
         self.test_table = dynamodb.Table(self, "TestEntriesTable", table_name="test_entries", **table_kwargs)

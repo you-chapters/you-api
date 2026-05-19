@@ -12,3 +12,6 @@ class EntryRepository(ABC):
 
     @abstractmethod
     def list_by_user(self, user_id: str) -> list[Entry]: ...
+
+    @abstractmethod
+    def get_many(self, user_id: str, entry_ids: list[str]) -> list[Entry]: ...

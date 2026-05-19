@@ -10,3 +10,11 @@ class Entry(BaseModel):
     timestamp: str
     entry_id: str
     entry: str = Field(max_length=10_000)
+
+
+class SearchRequest(BaseModel):
+    query: str = Field(max_length=1_000)
+
+
+class SearchResult(BaseModel):
+    entries: list[Entry]

@@ -18,3 +18,12 @@ Authorization: Bearer {{token}}
 ### List entries by user
 GET {{baseUrl}}/entries
 Authorization: Bearer {{token}}
+
+### Search entries
+POST {{baseUrl}}/entries/search
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "query": "productive day"
+}
