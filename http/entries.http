@@ -1,17 +1,20 @@
-@baseUrl = http://localhost:8000
+@baseUrl = https://you.havryliuk.com
 @entry_id = 139f531d-636b-47b0-990f-043952dac5c6
+@token =
 
 ### Create entry
 POST {{baseUrl}}/entries
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
-  "user_id": "user-1",
   "entry": "Yesterday was a productive day."
 }
 
 ### Get entry
 GET {{baseUrl}}/entries/{{entry_id}}
+Authorization: Bearer {{token}}
 
 ### List entries by user
 GET {{baseUrl}}/entries
+Authorization: Bearer {{token}}
