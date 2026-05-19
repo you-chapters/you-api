@@ -18,7 +18,6 @@ FastAPI + AWS Lambda + DynamoDB entries API.
 make run-mem           # in-memory (no AWS)
 make run               # DynamoDB test table
 make run-prod          # DynamoDB prod table
-make requirements      # regenerate app/requirements.txt for Lambda packaging
 
 uv run pytest          # run all tests
 uv run pytest tests/test_entry_service.py::test_name  # single test
