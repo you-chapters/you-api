@@ -90,7 +90,7 @@ class ApiStack(Stack):
                 table,
                 starting_position=lambda_.StartingPosition.LATEST,
                 batch_size=10,
-                bisect_on_function_error=True,
+                bisect_batch_on_error=True,
                 on_failure=lambda_event_sources.SqsDlq(dlq),
                 max_record_age=Duration.hours(1),
             )
