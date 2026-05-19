@@ -1,13 +1,13 @@
 from datetime import datetime, timezone
 from functools import lru_cache
 
-from app.ports.embedding_port import EmbeddingPort
+from app.embedding.embedding_port import EmbeddingPort
 from app.repositories.vector_repository import VectorRepository
 
 
 @lru_cache
 def _embedding_port() -> EmbeddingPort:
-    from app.ports.openai_embedding_client import OpenAIEmbeddingClient
+    from app.embedding.openai_embedding_client import OpenAIEmbeddingClient
     return OpenAIEmbeddingClient()
 
 

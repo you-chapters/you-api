@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 
 from app.models.entry import CreateEntryRequest, Entry
-from app.ports.embedding_port import EmbeddingPort
+from app.embedding.embedding_port import EmbeddingPort
 from app.repositories.entry_repository import EntryRepository
 from app.repositories.vector_repository import VectorRepository
 

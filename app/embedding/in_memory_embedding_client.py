@@ -1,6 +1,6 @@
 import hashlib
 
-from app.ports.embedding_port import EmbeddingPort
+from app.embedding.embedding_port import EmbeddingPort
 
 _DIMS = 1536
 

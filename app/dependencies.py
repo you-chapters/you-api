@@ -3,7 +3,7 @@ from functools import lru_cache
 
 from fastapi import Request
 
-from app.ports.embedding_port import EmbeddingPort
+from app.embedding.embedding_port import EmbeddingPort
 from app.repositories.entry_repository import EntryRepository
 from app.repositories.in_memory_entry_repository import InMemoryEntryRepository
 from app.repositories.vector_repository import VectorRepository
@@ -25,9 +25,9 @@ def _repository() -> EntryRepository:
 @lru_cache
 def _embedding_port() -> EmbeddingPort:
     if os.getenv("EMBEDDING_TYPE") == "openai":
-        from app.ports.openai_embedding_client import OpenAIEmbeddingClient
+        from app.embedding.openai_embedding_client import OpenAIEmbeddingClient
         return OpenAIEmbeddingClient()
-    from app.ports.in_memory_embedding_client import InMemoryEmbeddingClient
+    from app.embedding.in_memory_embedding_client import InMemoryEmbeddingClient
     return InMemoryEmbeddingClient()
 
 

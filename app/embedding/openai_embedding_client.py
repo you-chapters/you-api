@@ -2,7 +2,7 @@ import os
 
 from openai import OpenAI
 
-from app.ports.embedding_port import EmbeddingPort
+from app.embedding.embedding_port import EmbeddingPort
 
 _MODEL = "text-embedding-3-small"
 
