@@ -1,14 +1,13 @@
-import os
-
 from pinecone import Pinecone
 
+from app.config import get_secret
 from app.repositories.vector_repository import VectorRepository
 
 
 class PineconeVectorRepository(VectorRepository):
     def __init__(self) -> None:
-        pc = Pinecone(api_key=os.environ["PINECONE_API_KEY"])
-        self._index = pc.Index(host=os.environ["PINECONE_INDEX_HOST"])
+        pc = Pinecone(api_key=get_secret("PINECONE_API_KEY"))
+        self._index = pc.Index(host=get_secret("PINECONE_INDEX_HOST"))
 
     def upsert(self, entry_id: str, user_id: str, vector: list[float], timestamp: int) -> None:
         self._index.upsert(vectors=[{"id": entry_id, "values": vector, "metadata": {"user_id": user_id, "timestamp": timestamp}}])

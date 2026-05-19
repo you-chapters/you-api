@@ -23,14 +23,26 @@ class ApiStack(Stack):
                  **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
+        _SSM_OPENAI = "/you-api/openai-api-key"
+        _SSM_PINECONE_KEY = "/you-api/pinecone-api-key"
+        _SSM_PINECONE_HOST = "/you-api/pinecone-index-host"
+
+        ssm_params = [
+            ssm.StringParameter.from_secure_string_parameter_attributes(
+                self, "OpenAIApiKeyParam", parameter_name=_SSM_OPENAI
+            ),
+            ssm.StringParameter.from_secure_string_parameter_attributes(
+                self, "PineconeApiKeyParam", parameter_name=_SSM_PINECONE_KEY
+            ),
+            ssm.StringParameter.from_secure_string_parameter_attributes(
+                self, "PineconeIndexHostParam", parameter_name=_SSM_PINECONE_HOST
+            ),
+        ]
+
         shared_env = {
-            "OPENAI_API_KEY": ssm.StringParameter.value_for_secure_string_parameter(self, "/you-api/openai-api-key",
-                                                                                    version=1),
-            "PINECONE_API_KEY": ssm.StringParameter.value_for_secure_string_parameter(self, "/you-api/pinecone-api-key",
-                                                                                      version=1),
-            "PINECONE_INDEX_HOST": ssm.StringParameter.value_for_secure_string_parameter(self,
-                                                                                         "/you-api/pinecone-index-host",
-                                                                                         version=1),
+            "OPENAI_API_KEY": _SSM_OPENAI,
+            "PINECONE_API_KEY": _SSM_PINECONE_KEY,
+            "PINECONE_INDEX_HOST": _SSM_PINECONE_HOST,
         }
 
         fn = PythonFunction(
@@ -52,6 +64,8 @@ class ApiStack(Stack):
         )
 
         table.grant_read_write_data(fn)
+        for param in ssm_params:
+            param.grant_read(fn)
 
         embedding_fn = PythonFunction(
             self,
@@ -83,6 +97,9 @@ class ApiStack(Stack):
             comparison_operator=cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
             alarm_description="Embedding Lambda failed to process a DynamoDB stream record",
         ).add_alarm_action(cw_actions.SnsAction(alert_topic))
+
+        for param in ssm_params:
+            param.grant_read(embedding_fn)
 
         table.grant_stream_read(embedding_fn)
         embedding_fn.add_event_source(
