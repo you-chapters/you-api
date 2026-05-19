@@ -15,3 +15,6 @@ class InMemoryEntryRepository(EntryRepository):
 
     def list_by_user(self, user_id: str) -> list[Entry]:
         return [e for e in self._store.values() if e.user_id == user_id]
+
+    def get_many(self, user_id: str, entry_ids: list[str]) -> list[Entry]:
+        return [e for eid in entry_ids if (e := self.get(user_id, eid)) is not None]

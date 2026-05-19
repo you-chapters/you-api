@@ -1,3 +1,7 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 # you-api
 
 FastAPI + AWS Lambda + DynamoDB entries API.
@@ -8,26 +12,33 @@ FastAPI + AWS Lambda + DynamoDB entries API.
 - Infrastructure: AWS CDK (Python) in `infra/`
 - Package manager: `uv`
 
-## Run
+## Commands
 
 ```bash
-make run-mem      # in-memory (no AWS)
-make run          # DynamoDB test table
-make run-prod     # DynamoDB prod table
-```
+make run-mem           # in-memory (no AWS)
+make run               # DynamoDB test table
+make run-prod          # DynamoDB prod table
 
-## Deploy
+uv run pytest          # run all tests
+uv run pytest tests/test_entry_service.py::test_name  # single test
 
-```bash
-make requirements          # regenerate app/requirements.txt
 cd infra && cdk deploy --all
 ```
 
 ## Architecture
 
-Routes → Service → Repository (ABC). Two implementations: `InMemoryEntryRepository` (local) and `DynamoDBEntryRepository` (prod). Selected via `REPOSITORY_TYPE` env var; singleton via `@lru_cache`.
+**Two Lambda functions:**
+- `handler.py` — wraps FastAPI via Mangum; handles all HTTP CRUD
+- `handler_embedding.py` — DynamoDB Streams consumer; embeds new entries async via OpenAI → Pinecone
 
-Authentication: API Gateway Cognito User Pool authorizer validates JWTs. `get_current_user_id(request)` in `app/dependencies.py` extracts `sub` from `event["requestContext"]["authorizer"]["claims"]["sub"]`. Falls back to `DEV_USER_ID` env var for local dev. User ID is never accepted from request bodies.
+**Write path is non-blocking:** entries are saved to DynamoDB first; embeddings happen in the background via Streams.
+
+**Adapters behind ABCs, selected by env vars at startup, singletons via `@lru_cache`:**
+- `REPOSITORY_TYPE=dynamodb` → `DynamoDBEntryRepository`, else `InMemoryEntryRepository`
+- `EMBEDDING_TYPE=openai` → `OpenAIEmbeddingClient`, else `InMemoryEmbeddingClient`
+- `VECTOR_REPOSITORY_TYPE=pinecone` → `PineconeVectorRepository`, else `InMemoryVectorRepository`
+
+**Authentication:** API Gateway Cognito authorizer validates JWTs. `get_current_user_id(request)` extracts `sub` from `event["requestContext"]["authorizer"]["claims"]["sub"]`. Falls back to `DEV_USER_ID` env var locally. User ID is never accepted from request bodies.
 
 ## Conventions
 
