@@ -19,13 +19,18 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 class ApiStack(Stack):
-    def __init__(self, scope: Construct, construct_id: str, *, table: dynamodb.Table, user_pool: cognito.UserPool, **kwargs) -> None:
+    def __init__(self, scope: Construct, construct_id: str, *, table: dynamodb.Table, user_pool: cognito.UserPool,
+                 **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
         shared_env = {
-            "OPENAI_API_KEY": ssm.StringParameter.value_for_secure_string_parameter(self, "/you-api/openai-api-key"),
-            "PINECONE_API_KEY": ssm.StringParameter.value_for_secure_string_parameter(self, "/you-api/pinecone-api-key"),
-            "PINECONE_INDEX_HOST": ssm.StringParameter.value_for_secure_string_parameter(self, "/you-api/pinecone-index-host"),
+            "OPENAI_API_KEY": ssm.StringParameter.value_for_secure_string_parameter(self, "/you-api/openai-api-key",
+                                                                                    version=1),
+            "PINECONE_API_KEY": ssm.StringParameter.value_for_secure_string_parameter(self, "/you-api/pinecone-api-key",
+                                                                                      version=1),
+            "PINECONE_INDEX_HOST": ssm.StringParameter.value_for_secure_string_parameter(self,
+                                                                                         "/you-api/pinecone-index-host",
+                                                                                         version=1),
         }
 
         fn = PythonFunction(
