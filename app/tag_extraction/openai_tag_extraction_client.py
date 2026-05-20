@@ -7,13 +7,12 @@ from app.models.entry_tags import EntryTags
 from app.tag_extraction.tag_extraction_port import TagExtractionClient
 
 _MODEL = "gpt-4o-mini"
-_TOPICS = "work, family, travel, health, reading, finance, relationships, hobbies, food, exercise"
 
-_SYSTEM_PROMPT = f"""Extract structured metadata from a journal entry. Return a JSON object with exactly these fields:
+_SYSTEM_PROMPT = """Extract structured metadata from a journal entry. Return a JSON object with exactly these fields:
 - "people": array of full names mentioned (use most complete consistent form, e.g. "Alice Smith" not "Alice")
 - "locations": array of places mentioned or referenced; include user_location if provided and not already present
-- "topics": array from this controlled vocabulary only: {_TOPICS}
-- "mood": one of "positive", "negative", "neutral", "mixed", or null
+- "topics": array of topics covered; each topic must be a single lowercase word (e.g. "work", "sleep", "health", "travel", etc.)
+- "mood": one of "positive", "negative", "neutral", "mixed", "anxious", "excited", or null
 - "time_markers": array of references to events at a different time than the entry date (e.g. "last week", "in June")
 
 Return only valid JSON. No explanation or extra fields."""

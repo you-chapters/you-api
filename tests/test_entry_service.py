@@ -1,7 +1,8 @@
 import pytest
 
 from app.embedding.in_memory_embedding_client import InMemoryEmbeddingClient
-from app.models.entry import CreateEntryRequest
+from app.models.entry import CreateEntryRequest, Entry
+from app.models.entry_tags import EntryTags
 from app.repositories.in_memory_entry_repository import InMemoryEntryRepository
 from app.repositories.in_memory_vector_repository import InMemoryVectorRepository
 from app.services.entry_service import EntryService
@@ -103,3 +104,101 @@ def test_search_entries_respects_user_isolation(search_service: EntryService) ->
     results = search_service.search_entries("user-1", "hello")
 
     assert all(r.user_id == "user-1" for r in results)
+
+
+def test_get_summary_empty(service: EntryService) -> None:
+    summary = service.get_summary("user-1")
+
+    assert summary.period_days == 30
+    assert summary.entry_count == 0
+    assert summary.mood_timeline == []
+    assert summary.top_topics == []
+    assert summary.top_people == []
+
+
+def test_get_summary_counts_entries_in_period(service: EntryService) -> None:
+    service._repository.save(Entry(
+        user_id="user-1", entry_id="e1", entry="a",
+        timestamp="2026-05-19T10:00:00+00:00",
+        tags=EntryTags(topics=["work"], people=["Alice"], mood="positive"),
+    ))
+    service._repository.save(Entry(
+        user_id="user-1", entry_id="e2", entry="b",
+        timestamp="2020-01-01T00:00:00+00:00",
+        tags=EntryTags(topics=["health"]),
+    ))
+
+    summary = service.get_summary("user-1", period_days=30)
+
+    assert summary.entry_count == 1
+
+
+def test_get_summary_aggregates_topics_and_people(service: EntryService) -> None:
+    service._repository.save(Entry(
+        user_id="user-1", entry_id="e1", entry="a",
+        timestamp="2026-05-18T10:00:00+00:00",
+        tags=EntryTags(topics=["work", "health"], people=["Alice"]),
+    ))
+    service._repository.save(Entry(
+        user_id="user-1", entry_id="e2", entry="b",
+        timestamp="2026-05-19T10:00:00+00:00",
+        tags=EntryTags(topics=["work"], people=["Alice", "Bob"]),
+    ))
+
+    summary = service.get_summary("user-1", period_days=30)
+
+    topics = {t.topic: t.count for t in summary.top_topics}
+    assert topics == {"work": 2, "health": 1}
+    people = {p.name: p.count for p in summary.top_people}
+    assert people == {"Alice": 2, "Bob": 1}
+
+
+def test_get_summary_mood_timeline_latest_entry_wins(service: EntryService) -> None:
+    service._repository.save(Entry(
+        user_id="user-1", entry_id="e1", entry="a",
+        timestamp="2026-05-19T08:00:00+00:00",
+        tags=EntryTags(mood="negative"),
+    ))
+    service._repository.save(Entry(
+        user_id="user-1", entry_id="e2", entry="b",
+        timestamp="2026-05-19T20:00:00+00:00",
+        tags=EntryTags(mood="positive"),
+    ))
+
+    summary = service.get_summary("user-1", period_days=30)
+
+    assert len(summary.mood_timeline) == 1
+    assert summary.mood_timeline[0].date == "2026-05-19"
+    assert summary.mood_timeline[0].mood == "positive"
+
+
+def test_get_summary_skips_entries_without_tags(service: EntryService) -> None:
+    service._repository.save(Entry(
+        user_id="user-1", entry_id="e1", entry="a",
+        timestamp="2026-05-19T10:00:00+00:00",
+        tags=None,
+    ))
+
+    summary = service.get_summary("user-1", period_days=30)
+
+    assert summary.entry_count == 1
+    assert summary.mood_timeline == []
+    assert summary.top_topics == []
+
+
+def test_get_summary_isolates_by_user(service: EntryService) -> None:
+    service._repository.save(Entry(
+        user_id="user-1", entry_id="e1", entry="a",
+        timestamp="2026-05-19T10:00:00+00:00",
+        tags=EntryTags(topics=["work"]),
+    ))
+    service._repository.save(Entry(
+        user_id="user-2", entry_id="e2", entry="b",
+        timestamp="2026-05-19T10:00:00+00:00",
+        tags=EntryTags(topics=["health"]),
+    ))
+
+    summary = service.get_summary("user-1", period_days=30)
+
+    assert summary.entry_count == 1
+    assert summary.top_topics[0].topic == "work"

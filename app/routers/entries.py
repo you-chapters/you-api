@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from app.dependencies import get_current_user_id, get_service
 from app.models.entry import CreateEntryRequest, Entry, SearchRequest, SearchResult
+from app.models.summary import PeriodSummary
 from app.services.entry_service import EntryService
 
 router = APIRouter(prefix="/entries", tags=["entries"])
@@ -15,6 +16,15 @@ def create_entry(request: CreateEntryRequest, user_id: str = Depends(get_current
 @router.post("/search", response_model=SearchResult)
 def search_entries(request: SearchRequest, user_id: str = Depends(get_current_user_id), service: EntryService = Depends(get_service)) -> SearchResult:
     return SearchResult(entries=service.search_entries(user_id, request.query))
+
+
+@router.get("/summary", response_model=PeriodSummary)
+def get_summary(
+    period: int = 30,
+    user_id: str = Depends(get_current_user_id),
+    service: EntryService = Depends(get_service),
+) -> PeriodSummary:
+    return service.get_summary(user_id, period_days=period)
 
 
 @router.get("/{entry_id}", response_model=Entry)

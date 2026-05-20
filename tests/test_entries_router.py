@@ -123,3 +123,22 @@ def test_search_entries_rejects_oversized_query(search_client) -> None:
     response = client.post("/entries/search", json={"query": "q" * 1_001})
 
     assert response.status_code == 422
+
+
+def test_get_summary_empty(client: TestClient) -> None:
+    response = client.get("/entries/summary")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["period_days"] == 30
+    assert data["entry_count"] == 0
+    assert data["mood_timeline"] == []
+    assert data["top_topics"] == []
+    assert data["top_people"] == []
+
+
+def test_get_summary_period_param(client: TestClient) -> None:
+    response = client.get("/entries/summary?period=7")
+
+    assert response.status_code == 200
+    assert response.json()["period_days"] == 7

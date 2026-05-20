@@ -28,3 +28,11 @@ Authorization: Bearer {{token}}
 {
   "query": "productive day"
 }
+
+### Get summary (30-day default)
+GET {{baseUrl}}/entries/summary
+Authorization: Bearer {{token}}
+
+### Get summary (7-day)
+GET {{baseUrl}}/entries/summary?period=7
+Authorization: Bearer {{token}}
