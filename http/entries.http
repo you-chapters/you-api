@@ -8,7 +8,8 @@ Content-Type: application/json
 Authorization: Bearer {{token}}
 
 {
-  "entry": "Yesterday was a productive day."
+  "entry": "Yesterday was a productive day.",
+  "location": "Kyiv"
 }
 
 ### Get entry
