@@ -76,8 +76,14 @@ class ApiStack(Stack):
             runtime=lambda_.Runtime.PYTHON_3_13,
             memory_size=512,
             timeout=Duration.seconds(60),
-            environment=shared_env,
+            environment={
+                "DYNAMODB_TABLE_NAME": table.table_name,
+                "TAG_EXTRACTION_TYPE": "openai",
+                **shared_env,
+            },
         )
+
+        table.grant_write_data(embedding_fn)
 
         dlq = sqs.Queue(
             self,

@@ -2,6 +2,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from app.models.entry_tags import EntryTags
 from app.repositories.pinecone_vector_repository import PineconeVectorRepository
 
 
@@ -18,11 +19,43 @@ def repo(mock_index) -> PineconeVectorRepository:
     return PineconeVectorRepository()
 
 
-def test_upsert_calls_index_upsert(repo, mock_index) -> None:
+def test_upsert_without_tags_stores_empty_metadata(repo, mock_index) -> None:
     repo.upsert("entry-1", "user-1", [0.1, 0.2], 1000)
 
     mock_index.upsert.assert_called_once_with(
-        vectors=[{"id": "entry-1", "values": [0.1, 0.2], "metadata": {"user_id": "user-1", "timestamp": 1000}}]
+        vectors=[{
+            "id": "entry-1",
+            "values": [0.1, 0.2],
+            "metadata": {
+                "user_id": "user-1",
+                "timestamp": 1000,
+                "topics": [],
+                "mood": None,
+                "people": [],
+                "locations": [],
+            },
+        }]
+    )
+
+
+def test_upsert_includes_tags_in_metadata(repo, mock_index) -> None:
+    tags = EntryTags(topics=["work", "health"], mood="positive", people=["Alice Smith"], locations=["NYC"])
+
+    repo.upsert("entry-1", "user-1", [0.1, 0.2], 1000, tags)
+
+    mock_index.upsert.assert_called_once_with(
+        vectors=[{
+            "id": "entry-1",
+            "values": [0.1, 0.2],
+            "metadata": {
+                "user_id": "user-1",
+                "timestamp": 1000,
+                "topics": ["work", "health"],
+                "mood": "positive",
+                "people": ["Alice Smith"],
+                "locations": ["NYC"],
+            },
+        }]
     )
 
 

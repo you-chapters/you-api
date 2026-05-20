@@ -75,6 +75,20 @@ def test_list_entries_empty(client: TestClient) -> None:
     assert response.json() == []
 
 
+def test_create_entry_with_location(client: TestClient) -> None:
+    response = client.post("/entries", json={"entry": "hello", "location": "NYC"})
+
+    assert response.status_code == 201
+    assert response.json()["location"] == "NYC"
+
+
+def test_create_entry_location_defaults_to_none(client: TestClient) -> None:
+    response = client.post("/entries", json={"entry": "hello"})
+
+    assert response.status_code == 201
+    assert response.json()["location"] is None
+
+
 def test_create_entry_rejects_oversized_entry(client: TestClient) -> None:
     response = client.post("/entries", json={"entry": "x" * 10_001})
 

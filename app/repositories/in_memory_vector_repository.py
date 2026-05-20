@@ -1,5 +1,6 @@
 import math
 
+from app.models.entry_tags import EntryTags
 from app.repositories.vector_repository import VectorRepository
 
 
@@ -13,7 +14,7 @@ class InMemoryVectorRepository(VectorRepository):
     def __init__(self) -> None:
         self._store: dict[str, tuple[str, int, list[float]]] = {}
 
-    def upsert(self, entry_id: str, user_id: str, vector: list[float], timestamp: int) -> None:
+    def upsert(self, entry_id: str, user_id: str, vector: list[float], timestamp: int, tags: EntryTags | None = None) -> None:
         self._store[entry_id] = (user_id, timestamp, vector)
 
     def search(self, user_id: str, vector: list[float], top_k: int = 10) -> list[str]:

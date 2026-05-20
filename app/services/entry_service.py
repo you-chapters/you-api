@@ -24,6 +24,7 @@ class EntryService:
             timestamp=datetime.now(timezone.utc).isoformat(),
             entry_id=str(uuid.uuid4()),
             entry=request.entry,
+            location=request.location,
         )
         self._repository.save(entry)
         return entry

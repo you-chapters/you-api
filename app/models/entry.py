@@ -1,8 +1,11 @@
 from pydantic import BaseModel, Field
 
+from app.models.entry_tags import EntryTags
+
 
 class CreateEntryRequest(BaseModel):
     entry: str = Field(max_length=10_000)
+    location: str | None = None
 
 
 class Entry(BaseModel):
@@ -10,6 +13,8 @@ class Entry(BaseModel):
     timestamp: str
     entry_id: str
     entry: str = Field(max_length=10_000)
+    location: str | None = None
+    tags: EntryTags | None = None
 
 
 class SearchRequest(BaseModel):
