@@ -33,7 +33,8 @@ class EntryService:
         return self._repository.get(user_id, entry_id)
 
     def list_entries(self, user_id: str) -> list[Entry]:
-        return self._repository.list_by_user(user_id)
+        entries = self._repository.list_by_user(user_id)
+        return sorted(entries, key=lambda e: e.timestamp, reverse=True)
 
     def search_entries(self, user_id: str, query: str) -> list[Entry]:
         if not self._embedding_port or not self._vector_repository:

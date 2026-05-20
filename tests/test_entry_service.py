@@ -59,6 +59,18 @@ def test_list_entries_returns_empty_for_unknown_user(service: EntryService) -> N
     assert service.list_entries("unknown") == []
 
 
+def test_list_entries_returns_latest_first(service: EntryService) -> None:
+    e1 = service.create_entry("user-1", CreateEntryRequest(entry="first"))
+    e2 = service.create_entry("user-1", CreateEntryRequest(entry="second"))
+    e3 = service.create_entry("user-1", CreateEntryRequest(entry="third"))
+
+    entries = service.list_entries("user-1")
+
+    assert entries[0].entry_id == e3.entry_id
+    assert entries[1].entry_id == e2.entry_id
+    assert entries[2].entry_id == e1.entry_id
+
+
 def test_search_entries_raises_when_not_configured(service: EntryService) -> None:
     with pytest.raises(RuntimeError, match="Search not configured"):
         service.search_entries("user-1", "anything")
