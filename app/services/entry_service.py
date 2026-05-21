@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 
 from app.embedding.embedding_client import EmbeddingClient
 from app.models.entry import CreateEntryRequest, Entry
-from app.models.summary import MoodPoint, PersonCount, PeriodSummary, TopicCount
+from app.models.summary import LocationCount, MoodPoint, PersonCount, PeriodSummary, TopicCount
 from app.repositories.entry_repository import EntryRepository
 from app.repositories.vector_repository import VectorRepository
 
@@ -45,6 +45,7 @@ class EntryService:
 
         topic_counter: Counter[str] = Counter()
         person_counter: Counter[str] = Counter()
+        location_counter: Counter[str] = Counter()
         mood_by_date: dict[str, str] = {}
 
         for entry in sorted(entries, key=lambda e: e.timestamp):
@@ -52,6 +53,7 @@ class EntryService:
                 continue
             topic_counter.update(entry.tags.topics)
             person_counter.update(entry.tags.people)
+            location_counter.update(entry.tags.locations)
             if entry.tags.mood:
                 mood_by_date[entry.timestamp[:10]] = entry.tags.mood
 
@@ -61,6 +63,7 @@ class EntryService:
             mood_timeline=[MoodPoint(date=d, mood=m) for d, m in sorted(mood_by_date.items())],
             top_topics=[TopicCount(topic=t, count=c) for t, c in topic_counter.most_common()],
             top_people=[PersonCount(name=n, count=c) for n, c in person_counter.most_common()],
+            top_locations=[LocationCount(location=l, count=c) for l, c in location_counter.most_common()],
         )
 
     def search_entries(self, user_id: str, query: str) -> list[Entry]:

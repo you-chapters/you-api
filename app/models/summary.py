@@ -16,9 +16,15 @@ class PersonCount(BaseModel):
     count: int
 
 
+class LocationCount(BaseModel):
+    location: str
+    count: int
+
+
 class PeriodSummary(BaseModel):
     period_days: int
     entry_count: int
     mood_timeline: list[MoodPoint]
     top_topics: list[TopicCount]
     top_people: list[PersonCount]
+    top_locations: list[LocationCount]

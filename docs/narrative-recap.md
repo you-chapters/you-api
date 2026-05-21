@@ -389,19 +389,26 @@ def handler(event, context):
             print(f"narrative generation failed for user {user_id}: {e}")
 
 
+_ACTIVE_USER_DAYS = 90  # skip users with no entries in this window
+
+
 def _distinct_user_ids() -> set[str]:
     table = boto3.resource("dynamodb").Table(os.environ["ENTRIES_TABLE_NAME"])
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=_ACTIVE_USER_DAYS)).isoformat()
     user_ids: set[str] = set()
-    response = table.scan(ProjectionExpression="user_id")
+    scan_kwargs = dict(
+        ProjectionExpression="user_id",
+        FilterExpression="#ts >= :cutoff",
+        ExpressionAttributeNames={"#ts": "timestamp"},
+        ExpressionAttributeValues={":cutoff": cutoff},
+    )
+    response = table.scan(**scan_kwargs)
     while True:
         for item in response["Items"]:
             user_ids.add(item["user_id"])
         if "LastEvaluatedKey" not in response:
             break
-        response = table.scan(
-            ProjectionExpression="user_id",
-            ExclusiveStartKey=response["LastEvaluatedKey"],
-        )
+        response = table.scan(**scan_kwargs, ExclusiveStartKey=response["LastEvaluatedKey"])
     return user_ids
 ```
 

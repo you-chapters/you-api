@@ -135,6 +135,7 @@ def test_get_summary_empty(client: TestClient) -> None:
     assert data["mood_timeline"] == []
     assert data["top_topics"] == []
     assert data["top_people"] == []
+    assert data["top_locations"] == []
 
 
 def test_get_summary_period_param(client: TestClient) -> None:

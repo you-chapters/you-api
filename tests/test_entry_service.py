@@ -114,6 +114,7 @@ def test_get_summary_empty(service: EntryService) -> None:
     assert summary.mood_timeline == []
     assert summary.top_topics == []
     assert summary.top_people == []
+    assert summary.top_locations == []
 
 
 def test_get_summary_counts_entries_in_period(service: EntryService) -> None:
@@ -153,6 +154,24 @@ def test_get_summary_aggregates_topics_and_people(service: EntryService) -> None
     assert people == {"Alice": 2, "Bob": 1}
 
 
+def test_get_summary_aggregates_locations(service: EntryService) -> None:
+    service._repository.save(Entry(
+        user_id="user-1", entry_id="e1", entry="a",
+        timestamp="2026-05-18T10:00:00+00:00",
+        tags=EntryTags(locations=["Paris", "London"]),
+    ))
+    service._repository.save(Entry(
+        user_id="user-1", entry_id="e2", entry="b",
+        timestamp="2026-05-19T10:00:00+00:00",
+        tags=EntryTags(locations=["Paris"]),
+    ))
+
+    summary = service.get_summary("user-1", period_days=30)
+
+    locations = {loc.location: loc.count for loc in summary.top_locations}
+    assert locations == {"Paris": 2, "London": 1}
+
+
 def test_get_summary_mood_timeline_latest_entry_wins(service: EntryService) -> None:
     service._repository.save(Entry(
         user_id="user-1", entry_id="e1", entry="a",
@@ -184,6 +203,7 @@ def test_get_summary_skips_entries_without_tags(service: EntryService) -> None:
     assert summary.entry_count == 1
     assert summary.mood_timeline == []
     assert summary.top_topics == []
+    assert summary.top_locations == []
 
 
 def test_get_summary_isolates_by_user(service: EntryService) -> None:
