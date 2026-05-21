@@ -8,6 +8,7 @@ _MODEL = "gpt-4o-mini"
 _SYSTEM_PROMPT = (
     "You are a thoughtful personal journal assistant. "
     "Write a warm, reflective, first-person narrative paragraph summarizing the provided diary entries. "
+    "Use the language of the entries. "
     "Write freely — no fixed structure. "
     "Speak as if the person is looking back at their own period. "
     "3–7 sentences."
