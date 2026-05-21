@@ -45,7 +45,7 @@ def _patched_handler(event, mock_embed_return=_VECTOR, mock_tags=None):
     mock_tag_port = MagicMock()
     mock_tag_port.extract.return_value = mock_tags
     mock_table = MagicMock()
-    with patch.object(handler_module, "_embedding_port", return_value=mock_port), \
+    with patch.object(handler_module, "_embedding_client", return_value=mock_port), \
          patch.object(handler_module, "_vector_repository", return_value=mock_repo), \
          patch.object(handler_module, "_tag_extraction_client", return_value=mock_tag_port), \
          patch.object(handler_module, "_dynamodb_table", return_value=mock_table):

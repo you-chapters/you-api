@@ -82,7 +82,7 @@ The LLM is instructed to:
 - Merge user-provided location with text-extracted locations (not override)
 - Normalize topics to a controlled vocabulary: `work, family, travel, health, reading, finance, relationships, hobbies, food, exercise`
 
-`app/handler_embedding.py` gets a module-level `@lru_cache` factory (same pattern as `_embedding_port`):
+`app/handler_embedding.py` gets a module-level `@lru_cache` factory (same pattern as `_embedding_client`):
 ```python
 @lru_cache
 def _tag_extraction_port() -> TagExtractionClient:

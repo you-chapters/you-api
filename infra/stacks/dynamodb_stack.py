@@ -14,7 +14,7 @@ class DynamoDBStack(Stack):
             removal_policy=RemovalPolicy.RETAIN,
         )
 
-        self.table = dynamodb.Table(
+        self.entries_table = dynamodb.Table(
             self,
             "EntriesTable",
             table_name="entries",
@@ -23,3 +23,13 @@ class DynamoDBStack(Stack):
         )
 
         self.test_table = dynamodb.Table(self, "TestEntriesTable", table_name="test_entries", **table_kwargs)
+
+        self.narratives_table = dynamodb.Table(
+            self,
+            "NarrativesTable",
+            table_name="narratives",
+            partition_key=dynamodb.Attribute(name="user_id", type=dynamodb.AttributeType.STRING),
+            sort_key=dynamodb.Attribute(name="record_id", type=dynamodb.AttributeType.STRING),
+            billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
+            removal_policy=RemovalPolicy.RETAIN,
+        )

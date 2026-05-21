@@ -1,12 +1,12 @@
 from openai import OpenAI
 
 from app.config import get_secret
-from app.embedding.embedding_port import EmbeddingPort
+from app.embedding.embedding_client import EmbeddingClient
 
 _MODEL = "text-embedding-3-small"
 
 
-class OpenAIEmbeddingClient(EmbeddingPort):
+class OpenAIEmbeddingClient(EmbeddingClient):
     def __init__(self) -> None:
         self._client = OpenAI(api_key=get_secret("OPENAI_API_KEY"))
 

@@ -19,8 +19,8 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 class ApiStack(Stack):
-    def __init__(self, scope: Construct, construct_id: str, *, table: dynamodb.Table, user_pool: cognito.UserPool,
-                 **kwargs) -> None:
+    def __init__(self, scope: Construct, construct_id: str, *, entries_table: dynamodb.Table,
+                 narratives_table: dynamodb.Table, user_pool: cognito.UserPool, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
         _SSM_OPENAI = "/you-api/openai-api-key"
@@ -56,14 +56,17 @@ class ApiStack(Stack):
             timeout=Duration.seconds(30),
             environment={
                 "REPOSITORY_TYPE": "dynamodb",
-                "DYNAMODB_TABLE_NAME": table.table_name,
+                "ENTRIES_TABLE_NAME": entries_table.table_name,
+                "NARRATIVES_TABLE_NAME": narratives_table.table_name,
                 "EMBEDDING_TYPE": "openai",
                 "VECTOR_REPOSITORY_TYPE": "pinecone",
+                "LLM_TYPE": "openai",
                 **shared_env,
             },
         )
 
-        table.grant_read_write_data(fn)
+        entries_table.grant_read_write_data(fn)
+        narratives_table.grant_read_write_data(fn)
         for param in ssm_params:
             param.grant_read(fn)
 
@@ -77,13 +80,13 @@ class ApiStack(Stack):
             memory_size=512,
             timeout=Duration.seconds(60),
             environment={
-                "DYNAMODB_TABLE_NAME": table.table_name,
+                "ENTRIES_TABLE_NAME": entries_table.table_name,
                 "TAG_EXTRACTION_TYPE": "openai",
                 **shared_env,
             },
         )
 
-        table.grant_write_data(embedding_fn)
+        entries_table.grant_write_data(embedding_fn)
 
         dlq = sqs.Queue(
             self,
@@ -107,10 +110,10 @@ class ApiStack(Stack):
         for param in ssm_params:
             param.grant_read(embedding_fn)
 
-        table.grant_stream_read(embedding_fn)
+        entries_table.grant_stream_read(embedding_fn)
         embedding_fn.add_event_source(
             lambda_event_sources.DynamoEventSource(
-                table,
+                entries_table,
                 starting_position=lambda_.StartingPosition.LATEST,
                 batch_size=10,
                 bisect_batch_on_error=True,

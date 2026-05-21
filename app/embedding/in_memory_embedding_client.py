@@ -1,11 +1,11 @@
 import hashlib
 
-from app.embedding.embedding_port import EmbeddingPort
+from app.embedding.embedding_client import EmbeddingClient
 
 _DIMS = 1536
 
 
-class InMemoryEmbeddingClient(EmbeddingPort):
+class InMemoryEmbeddingClient(EmbeddingClient):
     def embed(self, text: str) -> list[float]:
         h = int(hashlib.sha256(text.encode()).hexdigest(), 16)
         result = []

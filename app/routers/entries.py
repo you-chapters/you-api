@@ -1,9 +1,13 @@
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.dependencies import get_current_user_id, get_service
+from app.dependencies import get_current_user_id, get_narrative_service, get_service
 from app.models.entry import CreateEntryRequest, Entry, SearchRequest, SearchResult
+from app.models.narrative import NarrativeSummary
 from app.models.summary import PeriodSummary
 from app.services.entry_service import EntryService
+from app.services.narrative_service import NarrativeService
 
 router = APIRouter(prefix="/entries", tags=["entries"])
 
@@ -25,6 +29,21 @@ def get_summary(
     service: EntryService = Depends(get_service),
 ) -> PeriodSummary:
     return service.get_summary(user_id, period_days=period)
+
+
+@router.get("/narrative", response_model=NarrativeSummary)
+def get_narrative(
+    type: str = "week",
+    key: str | None = None,
+    refresh: bool = False,
+    user_id: str = Depends(get_current_user_id),
+    service: NarrativeService = Depends(get_narrative_service),
+) -> NarrativeSummary:
+    if type not in ("week", "month"):
+        raise HTTPException(status_code=422, detail="type must be 'week' or 'month'")
+    today = datetime.now(timezone.utc).date()
+    resolved_key = key or (today.strftime("%G-W%V") if type == "week" else today.strftime("%Y-%m"))
+    return service.get_narrative(user_id, period_type=type, period_key=resolved_key, force_refresh=refresh)
 
 
 @router.get("/{entry_id}", response_model=Entry)
