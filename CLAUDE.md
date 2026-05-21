@@ -48,6 +48,8 @@ cd infra && cdk deploy --all
 - `EMBEDDING_TYPE=openai` → `OpenAIEmbeddingClient`, else `InMemoryEmbeddingClient`
 - `VECTOR_REPOSITORY_TYPE=pinecone` → `PineconeVectorRepository`, else `InMemoryVectorRepository`
 - `TAG_EXTRACTION_TYPE=openai` → `OpenAITagExtractionClient`, else `InMemoryTagExtractionClient` (returns empty tags) — used only by the embedding Lambda
+- `LLM_TYPE=openai` → `OpenAILLMClient` (`gpt-4o-mini`), else `InMemoryLLMClient` (stub) — used only by the HTTP handler for narrative generation
+- `NARRATIVES_TABLE_NAME` presence (not a type flag) → `DynamoDBNarrativeRepository`, else `InMemoryNarrativeRepository`
 
 `handler.py` and `handler_embedding.py` each define their own `@lru_cache` factories independently; they do not share singletons.
 
@@ -60,6 +62,12 @@ cd infra && cdk deploy --all
 **Production failure path:** embedding Lambda failures land in an SQS DLQ (`EmbeddingDLQ`). A CloudWatch alarm fires when the DLQ has ≥ 1 message and sends an SNS email alert. Check the DLQ first when tags stop appearing on new entries.
 
 **Authentication:** API Gateway Cognito authorizer validates JWTs. `get_current_user_id(request)` extracts `sub` from `event["requestContext"]["authorizer"]["claims"]["sub"]`. Falls back to `DEV_USER_ID` env var locally. User ID is never accepted from request bodies.
+
+**Route ordering in `app/routers/entries.py`:** `GET /summary` and `GET /narrative` must be declared before `GET /{entry_id}`. FastAPI matches top-to-bottom; the literal path segments would otherwise be captured as `entry_id` values.
+
+**`narrative_repository.py` deviates from the pattern:** It contains both the ABC and `DynamoDBNarrativeRepository` in the same file. Every other repository keeps the DynamoDB impl in a separate `dynamodb_*.py` file. `InMemoryNarrativeRepository` follows the standard separate-file pattern.
+
+**`app/embedding/embedding_port.py` is dead code** — an identical ABC exists in `embedding_client.py`. All production code imports from `embedding_client.py`; `embedding_port.py` is a leftover from an earlier refactor.
 
 ## Conventions
 

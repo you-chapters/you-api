@@ -31,7 +31,7 @@ POST /entries/search { query }
 
 ## New abstractions
 
-**`app/ports/embedding_port.py`** — `EmbeddingPort` ABC
+**`app/embedding/embedding_client.py`** — `EmbeddingClient` ABC
 - `embed(text: str) -> list[float]`
 - Impls: `OpenAIEmbeddingClient` (prod), `InMemoryEmbeddingClient` (tests)
 
@@ -45,10 +45,10 @@ POST /entries/search { query }
 ## New files
 
 ```
-app/ports/__init__.py
-app/ports/embedding_port.py
-app/ports/openai_embedding_client.py
-app/ports/in_memory_embedding_client.py
+app/embedding/__init__.py
+app/embedding/embedding_client.py
+app/embedding/openai_embedding_client.py
+app/embedding/in_memory_embedding_client.py
 app/repositories/vector_repository.py
 app/repositories/in_memory_vector_repository.py
 app/repositories/pinecone_vector_repository.py
@@ -62,7 +62,7 @@ scripts/setup_pinecone.py                ← one-time index creation
 pyproject.toml                           ← add openai>=1.30, pinecone>=5.0
 app/models/entry.py                      ← add SearchRequest, SearchResult
 app/services/entry_service.py            ← add search_entries()
-app/dependencies.py                      ← add _embedding_port(), _vector_repository()
+app/dependencies.py                      ← add _embedding_client(), _vector_repository()
 app/routers/entries.py                   ← add POST /entries/search (before /{entry_id})
 infra/stacks/dynamodb_stack.py           ← enable Streams (NEW_IMAGE)
 infra/stacks/api_stack.py               ← embedding Lambda + event source + env vars
@@ -98,9 +98,9 @@ Index: serverless, AWS us-east-1, cosine metric, 1536 dims.
 ```
 1.  scripts/setup_pinecone.py
 2.  pyproject.toml
-3.  app/ports/embedding_port.py
-4.  app/ports/openai_embedding_client.py
-5.  app/ports/in_memory_embedding_client.py
+3.  app/embedding/embedding_client.py
+4.  app/embedding/openai_embedding_client.py
+5.  app/embedding/in_memory_embedding_client.py
 6.  app/repositories/vector_repository.py
 7.  app/repositories/in_memory_vector_repository.py
 8.  app/repositories/pinecone_vector_repository.py
