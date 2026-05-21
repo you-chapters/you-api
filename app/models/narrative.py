@@ -9,4 +9,4 @@ class NarrativeSummary(BaseModel):
     entry_count: int
     text: str
     generated_at: str
-    is_cached: bool
+    is_cached: bool = True
