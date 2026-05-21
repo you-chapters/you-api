@@ -2,13 +2,13 @@ import os
 from datetime import datetime, timezone
 from functools import lru_cache
 
-from app.embedding.embedding_port import EmbeddingPort
+from app.embedding.embedding_client import EmbeddingClient
 from app.repositories.vector_repository import VectorRepository
 from app.tag_extraction.tag_extraction_port import TagExtractionClient
 
 
 @lru_cache
-def _embedding_port() -> EmbeddingPort:
+def _embedding_client() -> EmbeddingClient:
     from app.embedding.openai_embedding_client import OpenAIEmbeddingClient
     return OpenAIEmbeddingClient()
 
@@ -31,7 +31,7 @@ def _tag_extraction_client() -> TagExtractionClient:
 @lru_cache
 def _dynamodb_table():
     import boto3
-    return boto3.resource("dynamodb").Table(os.environ["DYNAMODB_TABLE_NAME"])
+    return boto3.resource("dynamodb").Table(os.environ["ENTRIES_TABLE_NAME"])
 
 
 def handler(event, context):
@@ -58,7 +58,7 @@ def handler(event, context):
             f"{entry_text}"
         )
 
-        vector = _embedding_port().embed(augmented_text)
+        vector = _embedding_client().embed(augmented_text)
         _vector_repository().upsert(entry_id, user_id, vector, timestamp_unix, tags)
 
         _dynamodb_table().update_item(

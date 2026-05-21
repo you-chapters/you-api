@@ -79,7 +79,7 @@ def test_search_entries_raises_when_not_configured(service: EntryService) -> Non
 
 def test_search_entries_returns_matching_entries(search_service: EntryService) -> None:
     entry = search_service.create_entry("user-1", CreateEntryRequest(entry="hello"))
-    search_service._vector_repository.upsert(entry.entry_id, "user-1", search_service._embedding_port.embed("hello"), 1000)
+    search_service._vector_repository.upsert(entry.entry_id, "user-1", search_service._embedding_client.embed("hello"), 1000)
 
     results = search_service.search_entries("user-1", "hello")
 
@@ -98,8 +98,8 @@ def test_search_entries_returns_empty_when_vector_store_empty(search_service: En
 def test_search_entries_respects_user_isolation(search_service: EntryService) -> None:
     e1 = search_service.create_entry("user-1", CreateEntryRequest(entry="hello"))
     e2 = search_service.create_entry("user-2", CreateEntryRequest(entry="hello"))
-    search_service._vector_repository.upsert(e1.entry_id, "user-1", search_service._embedding_port.embed("hello"), 1000)
-    search_service._vector_repository.upsert(e2.entry_id, "user-2", search_service._embedding_port.embed("hello"), 1000)
+    search_service._vector_repository.upsert(e1.entry_id, "user-1", search_service._embedding_client.embed("hello"), 1000)
+    search_service._vector_repository.upsert(e2.entry_id, "user-2", search_service._embedding_client.embed("hello"), 1000)
 
     results = search_service.search_entries("user-1", "hello")
 

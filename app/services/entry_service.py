@@ -2,7 +2,7 @@ import uuid
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 
-from app.embedding.embedding_port import EmbeddingPort
+from app.embedding.embedding_client import EmbeddingClient
 from app.models.entry import CreateEntryRequest, Entry
 from app.models.summary import MoodPoint, PersonCount, PeriodSummary, TopicCount
 from app.repositories.entry_repository import EntryRepository
@@ -13,11 +13,11 @@ class EntryService:
     def __init__(
             self,
             repository: EntryRepository,
-            embedding_port: EmbeddingPort | None = None,
+            embedding_client: EmbeddingClient | None = None,
             vector_repository: VectorRepository | None = None,
     ) -> None:
         self._repository = repository
-        self._embedding_port = embedding_port
+        self._embedding_client = embedding_client
         self._vector_repository = vector_repository
 
     def create_entry(self, user_id: str, request: CreateEntryRequest) -> Entry:
@@ -64,8 +64,8 @@ class EntryService:
         )
 
     def search_entries(self, user_id: str, query: str) -> list[Entry]:
-        if not self._embedding_port or not self._vector_repository:
+        if not self._embedding_client or not self._vector_repository:
             raise RuntimeError("Search not configured")
-        vector = self._embedding_port.embed(query)
+        vector = self._embedding_client.embed(query)
         entry_ids = self._vector_repository.search(user_id, vector)
         return self._repository.get_many(user_id, entry_ids)

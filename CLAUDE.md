@@ -15,6 +15,8 @@ FastAPI + AWS Lambda + DynamoDB entries API.
 ## Commands
 
 ```bash
+uv sync                # install deps (first time or after uv.lock changes)
+
 make run-mem           # in-memory (no AWS)
 make run               # DynamoDB test table
 make run-prod          # DynamoDB prod table
@@ -51,7 +53,11 @@ cd infra && cdk deploy --all
 
 **SSM secret indirection (`app/config.py`):** env vars for secrets (OPENAI_API_KEY, PINECONE_API_KEY, PINECONE_INDEX_HOST) are set to SSM parameter paths in Lambda (e.g. `/you-api/openai-api-key`). At runtime `get_secret()` detects a leading `/` and fetches+decrypts from SSM. Locally, set these to raw values.
 
+**`handler_embedding.py` has no in-memory fallback** — unlike `dependencies.py`, it always uses `OpenAIEmbeddingClient` and `PineconeVectorRepository` regardless of env vars. Only `TAG_EXTRACTION_TYPE` is switchable there. Do not expect the in-memory adapters to work for the embedding pipeline.
+
 **DynamoDB Streams only on the prod table** (`entries`). The test table (`test_entries`) has no stream, so the embedding Lambda never fires locally or in tests.
+
+**Production failure path:** embedding Lambda failures land in an SQS DLQ (`EmbeddingDLQ`). A CloudWatch alarm fires when the DLQ has ≥ 1 message and sends an SNS email alert. Check the DLQ first when tags stop appearing on new entries.
 
 **Authentication:** API Gateway Cognito authorizer validates JWTs. `get_current_user_id(request)` extracts `sub` from `event["requestContext"]["authorizer"]["claims"]["sub"]`. Falls back to `DEV_USER_ID` env var locally. User ID is never accepted from request bodies.
 

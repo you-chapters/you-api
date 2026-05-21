@@ -99,7 +99,7 @@ def _run_handler(event, tags=None):
     tag_client.extract.return_value = tags or EntryTags()
     mock_table = MagicMock()
 
-    with patch.object(handler_module, "_embedding_port", return_value=embedding_client), \
+    with patch.object(handler_module, "_embedding_client", return_value=embedding_client), \
          patch.object(handler_module, "_vector_repository", return_value=vector_repo), \
          patch.object(handler_module, "_tag_extraction_client", return_value=tag_client), \
          patch.object(handler_module, "_dynamodb_table", return_value=mock_table):
@@ -157,7 +157,7 @@ def test_handler_augmented_text_contains_all_tag_fields() -> None:
     tag_client.extract.return_value = _REALISTIC_TAGS
     mock_table = MagicMock()
 
-    with patch.object(handler_module, "_embedding_port", return_value=embedding_client), \
+    with patch.object(handler_module, "_embedding_client", return_value=embedding_client), \
          patch.object(handler_module, "_vector_repository", return_value=InMemoryVectorRepository()), \
          patch.object(handler_module, "_tag_extraction_client", return_value=tag_client), \
          patch.object(handler_module, "_dynamodb_table", return_value=mock_table):
