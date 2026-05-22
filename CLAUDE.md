@@ -37,9 +37,10 @@ cd infra && cdk deploy --all
 
 ## Architecture
 
-**Two Lambda functions:**
-- `handler.py` — wraps FastAPI via Mangum; handles all HTTP CRUD
+**Three Lambda functions:**
+- `handler_entries.py` — wraps FastAPI via Mangum; handles all HTTP CRUD
 - `handler_embedding.py` — DynamoDB Streams consumer; runs on `INSERT` only; sequential pipeline: extract tags → build augmented text → embed → upsert Pinecone → write tags back to DynamoDB
+- `handler_narrative.py` — EventBridge cron; generates weekly/monthly narratives for all active users
 
 **Write path is non-blocking:** entries are saved to DynamoDB first; embeddings/tags happen in the background via Streams. Tags are never set via the HTTP API; they are always `null` until the embedding Lambda writes them back.
 
@@ -51,7 +52,7 @@ cd infra && cdk deploy --all
 - `LLM_TYPE=openai` → `OpenAILLMClient` (`gpt-4o-mini`), else `InMemoryLLMClient` (stub) — used only by the HTTP handler for narrative generation
 - `NARRATIVES_TABLE_NAME` presence (not a type flag) → `DynamoDBNarrativeRepository`, else `InMemoryNarrativeRepository`
 
-`handler.py` and `handler_embedding.py` each define their own `@lru_cache` factories independently; they do not share singletons.
+`handler_entries.py` and `handler_embedding.py` each define their own `@lru_cache` factories independently; they do not share singletons. `handler_narrative.py` reuses `app/dependencies.py` factories.
 
 **SSM secret indirection (`app/config.py`):** env vars for secrets (OPENAI_API_KEY, PINECONE_API_KEY, PINECONE_INDEX_HOST) are set to SSM parameter paths in Lambda (e.g. `/you-api/openai-api-key`). At runtime `get_secret()` detects a leading `/` and fetches+decrypts from SSM. Locally, set these to raw values.
 

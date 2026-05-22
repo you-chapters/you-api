@@ -6,6 +6,8 @@ from aws_cdk import aws_cloudwatch as cloudwatch
 from aws_cdk import aws_cloudwatch_actions as cw_actions
 from aws_cdk import aws_cognito as cognito
 from aws_cdk import aws_dynamodb as dynamodb
+from aws_cdk import aws_events as events
+from aws_cdk import aws_events_targets as targets
 from aws_cdk import aws_lambda as lambda_
 from aws_cdk import aws_lambda_event_sources as lambda_event_sources
 from aws_cdk import aws_sns as sns
@@ -49,7 +51,7 @@ class ApiStack(Stack):
             self,
             "YouApiFunction",
             entry=str(REPO_ROOT),
-            index="app/handler.py",
+            index="app/handler_entries.py",
             handler="handler",
             runtime=lambda_.Runtime.PYTHON_3_13,
             memory_size=512,
@@ -120,6 +122,47 @@ class ApiStack(Stack):
                 on_failure=lambda_event_sources.SqsDlq(dlq),
                 max_record_age=Duration.hours(1),
             )
+        )
+
+        narrative_fn = PythonFunction(
+            self,
+            "YouNarrativeFunction",
+            entry=str(REPO_ROOT),
+            index="app/handler_narrative.py",
+            handler="handler",
+            runtime=lambda_.Runtime.PYTHON_3_13,
+            memory_size=512,
+            timeout=Duration.minutes(5),
+            environment={
+                "REPOSITORY_TYPE": "dynamodb",
+                "ENTRIES_TABLE_NAME": entries_table.table_name,
+                "NARRATIVES_TABLE_NAME": narratives_table.table_name,
+                "LLM_TYPE": "openai",
+                **shared_env,
+            },
+        )
+
+        entries_table.grant_read_data(narrative_fn)
+        narratives_table.grant_read_write_data(narrative_fn)
+        for param in ssm_params:
+            param.grant_read(narrative_fn)
+
+        events.Rule(
+            self, "WeeklyNarrativeRule",
+            schedule=events.Schedule.cron(minute="55", hour="23", week_day="SUN"),
+            targets=[targets.LambdaFunction(
+                narrative_fn,
+                event=events.RuleTargetInput.from_object({"type": "week"}),
+            )],
+        )
+
+        events.Rule(
+            self, "MonthlyNarrativeRule",
+            schedule=events.Schedule.cron(minute="5", hour="0", day="1"),
+            targets=[targets.LambdaFunction(
+                narrative_fn,
+                event=events.RuleTargetInput.from_object({"type": "month"}),
+            )],
         )
 
         authorizer = apigw.CognitoUserPoolsAuthorizer(
