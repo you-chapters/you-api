@@ -3,8 +3,11 @@ from datetime import datetime, timezone
 from functools import lru_cache
 
 from app.embedding.embedding_client import EmbeddingClient
+from app.logging_config import get_logger
 from app.repositories.vector_repository import VectorRepository
 from app.tag_extraction.tag_extraction_port import TagExtractionClient
+
+logger = get_logger(__name__)
 
 
 @lru_cache
@@ -47,6 +50,7 @@ def handler(event, context):
 
         timestamp_unix = int(datetime.fromisoformat(timestamp).astimezone(timezone.utc).timestamp())
 
+        logger.info("Processing entry %s for user %s", entry_id, user_id)
         tags = _tag_extraction_client().extract(entry_text, timestamp, user_location)
 
         augmented_text = (

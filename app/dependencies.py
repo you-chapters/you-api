@@ -5,6 +5,7 @@ from fastapi import Request
 
 from app.embedding.embedding_client import EmbeddingClient
 from app.llm.llm_client import LLMClient
+from app.logging_config import get_logger
 from app.repositories.entry_repository import EntryRepository
 from app.repositories.in_memory_entry_repository import InMemoryEntryRepository
 from app.repositories.narrative_repository import NarrativeRepository
@@ -12,16 +13,17 @@ from app.repositories.vector_repository import VectorRepository
 from app.services.entry_service import EntryService
 from app.services.narrative_service import NarrativeService
 
+logger = get_logger(__name__)
+
 
 @lru_cache
 def _repository() -> EntryRepository:
-    print(f"REPOSITORY_TYPE={os.getenv('REPOSITORY_TYPE')}")
-    print(f"ENTRIES_TABLE_NAME={os.getenv('ENTRIES_TABLE_NAME')}")
+    logger.debug("REPOSITORY_TYPE=%s ENTRIES_TABLE_NAME=%s", os.getenv("REPOSITORY_TYPE"), os.getenv("ENTRIES_TABLE_NAME"))
     if os.getenv("REPOSITORY_TYPE") == "dynamodb":
-        print("Using DynamoDBEntryRepository")
+        logger.info("Using DynamoDBEntryRepository")
         from app.repositories.dynamodb_entry_repository import DynamoDBEntryRepository
         return DynamoDBEntryRepository(os.environ["ENTRIES_TABLE_NAME"])
-    print("Using InMemoryEntryRepository")
+    logger.info("Using InMemoryEntryRepository")
     return InMemoryEntryRepository()
 
 

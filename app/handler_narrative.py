@@ -2,6 +2,10 @@ import os
 from datetime import datetime, timedelta, timezone
 from functools import lru_cache
 
+from app.logging_config import get_logger
+
+logger = get_logger(__name__)
+
 _ACTIVE_USER_DAYS = 90
 
 
@@ -50,8 +54,10 @@ def handler(event, context):
     user_ids = _distinct_user_ids()
     service = _make_service()
 
+    logger.info("Generating narratives for %d users for period '%s' '%s'", len(user_ids), period_type, period_key)
     for user_id in user_ids:
         try:
             service.get_narrative(user_id, period_type=period_type, period_key=period_key)
-        except Exception as e:
-            print(f"narrative generation failed for user {user_id}: {e}")
+        except Exception:
+            logger.exception("Narrative generation failed for user %s", user_id)
+    logger.info("Narratives generated")
