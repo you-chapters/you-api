@@ -154,3 +154,60 @@ def test_month_narrative_generated():
     assert result.period_type == "month"
     assert result.period_key == CURRENT_MONTH
     assert result.is_cached is False
+
+
+def test_month_stale_last_week_regenerates():
+    from app.models.narrative import NarrativeSummary
+    svc = _make_service()
+    last_week = (TODAY - timedelta(days=7)).isoformat()
+    stale = NarrativeSummary(
+        period_type="month", period_key=CURRENT_MONTH,
+        entry_count=0, text="old",
+        generated_at=f"{last_week}T00:00:00+00:00", is_cached=False,
+    )
+    svc._narratives.save(USER, f"cache#month#{CURRENT_MONTH}", stale)
+    result = svc.get_narrative(USER, "month", CURRENT_MONTH)
+    assert result.is_cached is False
+    assert result.text != "old"
+
+
+def test_month_same_week_returns_cached():
+    from app.models.narrative import NarrativeSummary
+    svc = _make_service()
+    monday = (TODAY - timedelta(days=TODAY.weekday())).isoformat()
+    cached_narrative = NarrativeSummary(
+        period_type="month", period_key=CURRENT_MONTH,
+        entry_count=0, text="cached text",
+        generated_at=f"{monday}T00:00:00+00:00", is_cached=False,
+    )
+    svc._narratives.save(USER, f"cache#month#{CURRENT_MONTH}", cached_narrative)
+    result = svc.get_narrative(USER, "month", CURRENT_MONTH)
+    assert result.is_cached is True
+
+
+def test_week_yesterday_is_stale_but_month_yesterday_is_not():
+    from app.models.narrative import NarrativeSummary
+    svc_week = _make_service()
+    svc_month = _make_service()
+    yesterday = (TODAY - timedelta(days=1)).isoformat()
+
+    for svc, period_type, period_key in [
+        (svc_week, "week", CURRENT_WEEK),
+        (svc_month, "month", CURRENT_MONTH),
+    ]:
+        record = NarrativeSummary(
+            period_type=period_type, period_key=period_key,
+            entry_count=0, text="old",
+            generated_at=f"{yesterday}T00:00:00+00:00", is_cached=False,
+        )
+        svc._narratives.save(USER, f"cache#{period_type}#{period_key}", record)
+
+    week_result = svc_week.get_narrative(USER, "week", CURRENT_WEEK)
+    month_result = svc_month.get_narrative(USER, "month", CURRENT_MONTH)
+
+    assert week_result.is_cached is False
+    # month cached unless yesterday was in a different ISO week (i.e. today is Monday)
+    if TODAY.weekday() == 0:
+        assert month_result.is_cached is False
+    else:
+        assert month_result.is_cached is True

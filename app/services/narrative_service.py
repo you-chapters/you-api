@@ -30,7 +30,7 @@ class NarrativeService:
         if not force_refresh:
             cached = self._narratives.get(user_id, record_id)
             if cached:
-                stale = is_current and cached.generated_at[:10] != datetime.now(timezone.utc).date().isoformat()
+                stale = is_current and self._is_stale(period_type, cached.generated_at)
                 if not stale:
                     return cached.model_copy(update={"is_cached": True})
 
@@ -48,6 +48,13 @@ class NarrativeService:
         self._narratives.save(user_id, record_id, summary)
         return summary
 
+    def _is_stale(self, period_type: str, generated_at: str) -> bool:
+        now = datetime.now(timezone.utc)
+        generated = datetime.strptime(generated_at[:10], "%Y-%m-%d")
+        if period_type == "week":
+            return generated_at[:10] != now.date().isoformat()
+        return generated.strftime("%G-W%V") != now.strftime("%G-W%V")
+
     def _is_current_period(self, period_type: str, period_key: str) -> bool:
         today = datetime.now(timezone.utc).date()
         if period_type == "week":
@@ -59,7 +66,7 @@ class NarrativeService:
         if period_type == "week":
             year, week = int(period_key[:4]), int(period_key[6:])
             monday = datetime.fromisocalendar(year, week, 1).replace(tzinfo=timezone.utc)
-            sunday = monday + timedelta(days=7)
+            next_monday = monday + timedelta(days=7)
             return [e for e in all_entries
-                    if monday.isoformat() <= e.timestamp < sunday.isoformat()]
+                    if monday.isoformat() <= e.timestamp < next_monday.isoformat()]
         return [e for e in all_entries if e.timestamp[:7] == period_key]
