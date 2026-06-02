@@ -12,6 +12,7 @@ from app.repositories.narrative_repository import NarrativeRepository
 from app.repositories.vector_repository import VectorRepository
 from app.services.entry_service import EntryService
 from app.services.narrative_service import NarrativeService
+from app.services.phase_service import PhaseService
 
 logger = get_logger(__name__)
 
@@ -69,6 +70,10 @@ def get_service() -> EntryService:
 
 def get_narrative_service() -> NarrativeService:
     return NarrativeService(_repository(), _narrative_repository(), _llm_client())
+
+
+def get_phase_service() -> PhaseService:
+    return PhaseService(_repository(), _narrative_repository(), _llm_client())
 
 
 def get_current_user_id(request: Request) -> str:
