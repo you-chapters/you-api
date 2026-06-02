@@ -22,13 +22,13 @@ def _run(event, user_ids=None, mock_service=None):
 def test_week_event_uses_current_week():
     svc = _run({"type": "week"}, user_ids={"user-1"})
 
-    svc.get_narrative.assert_called_once_with("user-1", period_type="week", period_key=CURRENT_WEEK)
+    svc.get_narrative.assert_called_once_with("user-1", period_type="week", period_key=CURRENT_WEEK, force_refresh=True)
 
 
 def test_month_event_uses_previous_month():
     svc = _run({"type": "month"}, user_ids={"user-1"})
 
-    svc.get_narrative.assert_called_once_with("user-1", period_type="month", period_key=PREV_MONTH)
+    svc.get_narrative.assert_called_once_with("user-1", period_type="month", period_key=PREV_MONTH, force_refresh=True)
 
 
 def test_default_type_is_week():
@@ -59,8 +59,8 @@ def test_per_user_error_does_not_abort_others():
     assert svc.get_narrative.call_count == 2
 
 
-def test_no_force_refresh():
+def test_force_refresh_is_true():
     svc = _run({"type": "week"}, user_ids={"user-1"})
 
     _, kwargs = svc.get_narrative.call_args
-    assert kwargs.get("force_refresh", False) is False
+    assert kwargs.get("force_refresh") is True

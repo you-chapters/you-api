@@ -1,28 +1,31 @@
 from datetime import datetime, timedelta, timezone
 
 from app.llm.llm_client import LLMClient
+from app.logging_config import get_logger
 from app.models.narrative import NarrativeSummary
 from app.repositories.entry_repository import EntryRepository
 from app.repositories.narrative_repository import NarrativeRepository
 
+logger = get_logger(__name__)
+
 
 class NarrativeService:
     def __init__(
-        self,
-        entry_repo: EntryRepository,
-        narrative_repo: NarrativeRepository,
-        llm_client: LLMClient,
+            self,
+            entry_repo: EntryRepository,
+            narrative_repo: NarrativeRepository,
+            llm_client: LLMClient,
     ) -> None:
         self._entries = entry_repo
         self._narratives = narrative_repo
         self._llm = llm_client
 
     def get_narrative(
-        self,
-        user_id: str,
-        period_type: str,
-        period_key: str,
-        force_refresh: bool = False,
+            self,
+            user_id: str,
+            period_type: str,
+            period_key: str,
+            force_refresh: bool = False,
     ) -> NarrativeSummary:
         record_id = f"cache#{period_type}#{period_key}"
         is_current = self._is_current_period(period_type, period_key)
@@ -50,10 +53,8 @@ class NarrativeService:
 
     def _is_stale(self, period_type: str, generated_at: str) -> bool:
         now = datetime.now(timezone.utc)
-        generated = datetime.strptime(generated_at[:10], "%Y-%m-%d")
-        if period_type == "week":
-            return generated_at[:10] != now.date().isoformat()
-        return generated.strftime("%G-W%V") != now.strftime("%G-W%V")
+        generated = datetime.fromisoformat(generated_at)
+        return (now - generated) > timedelta(hours=24)
 
     def _is_current_period(self, period_type: str, period_key: str) -> bool:
         today = datetime.now(timezone.utc).date()

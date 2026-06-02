@@ -57,7 +57,7 @@ def handler(event, context):
     logger.info("Generating narratives for %d users for period '%s' '%s'", len(user_ids), period_type, period_key)
     for user_id in user_ids:
         try:
-            service.get_narrative(user_id, period_type=period_type, period_key=period_key)
+            service.get_narrative(user_id, period_type=period_type, period_key=period_key, force_refresh=True)
         except Exception:
             logger.exception("Narrative generation failed for user %s", user_id)
     logger.info("Narratives generated")
