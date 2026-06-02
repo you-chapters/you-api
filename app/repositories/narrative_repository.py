@@ -70,8 +70,12 @@ class DynamoDBNarrativeRepository(NarrativeRepository):
             return []
         dynamodb = boto3.resource("dynamodb")
         keys = [{"user_id": user_id, "record_id": f"phase#{pid}"} for pid in phase_ids]
-        response = dynamodb.batch_get_item(RequestItems={self._table_name: {"Keys": keys}})
-        items = response.get("Responses", {}).get(self._table_name, [])
+        pending: dict = {self._table_name: {"Keys": keys}}
+        items = []
+        while pending:
+            response = dynamodb.batch_get_item(RequestItems=pending)
+            items.extend(response.get("Responses", {}).get(self._table_name, []))
+            pending = response.get("UnprocessedKeys") or {}
         records = []
         for item in items:
             item.pop("user_id", None)

@@ -139,50 +139,34 @@ def test_sparse_micro_phase_merged():
     assert all(p.entry_count >= 1 for p in result)
 
 
-def test_frozen_past_phase_preserved():
-    # Create a phase that will be frozen (end_date > 4 weeks ago)
-    old_phase_id = str(uuid.uuid4())
-    old_start = (_NOW - timedelta(weeks=12)).date().isoformat()
-    old_end = (_NOW - timedelta(weeks=8)).date().isoformat()
-    frozen_record = PhaseRecord(
-        phase_id=old_phase_id,
-        title="The Old Chapter",
-        description="Frozen description.",
-        start_date=old_start,
-        end_date=old_end,
-        entry_count=5,
-        dominant_topics=["work"],
-        mean_mood=0.5,
-        top_people=[],
-        top_locations=[],
-        generated_at=(_NOW - timedelta(weeks=8)).isoformat(),
-        is_open=False,
-    )
-    repo = InMemoryNarrativeRepository()
-    repo.save_phase(USER, old_phase_id, frozen_record)
-    repo.save_phase_index(USER, PhaseIndex(
-        phase_ids=[old_phase_id],
-        last_detected_at=(_NOW - timedelta(weeks=8)).isoformat(),
-        window_size_days=7,
-    ))
-
-    # Current entries go into a new open phase
-    entries = _work_entries(27, 15)
+def test_frozen_past_phase_not_regenerated():
+    # 3 weeks of work (days 55..35) followed immediately by 3 weeks of travel (days 34..14)
+    # The closed work phase ends ~5 weeks ago, which is past the 4-week freeze cutoff.
+    entries = _work_entries(55, 21) + _travel_entries(34, 21)
     entry_repo = InMemoryEntryRepository()
     for e in entries:
         entry_repo.save(e)
 
+    # First run: capture the two detected phases with known titles
     llm = MagicMock()
-    llm.generate_phase.return_value = ("New Title", "New description.")
-    svc = PhaseService(entry_repo, repo, llm)
-    result = svc.detect_and_store(USER)
+    llm.generate_phase.side_effect = [("Old Title", "Old desc."), ("Open Title", "Open desc.")]
+    repo = InMemoryNarrativeRepository()
+    first = PhaseService(entry_repo, repo, llm).detect_and_store(USER)
+    assert len(first) == 2
+    closed = first[0]
+    assert closed.end_date is not None
+    freeze_cutoff = (_NOW - timedelta(weeks=4)).date().isoformat()
+    assert closed.end_date < freeze_cutoff, "Setup error: closed phase isn't old enough to be frozen"
 
-    frozen_in_result = [p for p in result if p.phase_id == old_phase_id]
-    # Frozen phase should appear only if it's within the detected date range.
-    # Since entries only cover the last 4 weeks, the old frozen phase won't overlap.
-    # The LLM should not have been called for the frozen phase even if it appeared.
-    if frozen_in_result:
-        assert frozen_in_result[0].title == "The Old Chapter"
+    # Second run: frozen phase must be reused; LLM called only for the open phase
+    llm2 = MagicMock()
+    llm2.generate_phase.return_value = ("Regenerated", "Regenerated desc.")
+    second = PhaseService(entry_repo, repo, llm2).detect_and_store(USER)
+
+    reused = next((p for p in second if p.phase_id == closed.phase_id), None)
+    assert reused is not None
+    assert reused.title == "Old Title"
+    assert llm2.generate_phase.call_count == 1
 
 
 def test_open_phase_regenerated_on_rerun():

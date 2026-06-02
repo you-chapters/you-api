@@ -19,7 +19,7 @@ _MOOD_MAP: dict[str, float] = {
     "positive": 1.0,
     "neutral": 0.0,
     "negative": -1.0,
-    "very negative": -2.0,
+    "very negative": -2.0
 }
 _WINDOW_DAYS = 7
 _MIN_WINDOWS = 3
@@ -103,7 +103,7 @@ class PhaseService:
             next_cursor = cursor + timedelta(days=_WINDOW_DAYS)
             window_entries = [
                 e for e in entries
-                if cursor.isoformat() <= e.timestamp < next_cursor.isoformat()
+                if cursor <= _parse_ts(e.timestamp) < next_cursor
             ]
             windows.append(_Window(start=cursor, entries=window_entries))
             cursor = next_cursor
@@ -388,12 +388,20 @@ def _mood_score(mood: str) -> float | None:
     return None
 
 
+def _parse_ts(ts: str) -> datetime:
+    dt = datetime.fromisoformat(ts)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
 def _sample_entries(entries: list[Entry], char_budget: int = _SAMPLE_CHARS) -> list[Entry]:
     result: list[Entry] = []
     total = 0
-    for e in sorted(entries, key=lambda e: e.timestamp):
+    for e in sorted(entries, key=lambda e: e.timestamp, reverse=True):
         if total + len(e.entry) > char_budget:
             break
         result.append(e)
         total += len(e.entry)
+    result.reverse()
     return result
