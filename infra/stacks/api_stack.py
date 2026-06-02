@@ -147,6 +147,35 @@ class ApiStack(Stack):
         for param in ssm_params:
             param.grant_read(narrative_fn)
 
+        phase_fn = PythonFunction(
+            self,
+            "YouPhaseFunction",
+            entry=str(REPO_ROOT),
+            index="app/handler_phase.py",
+            handler="handler",
+            runtime=lambda_.Runtime.PYTHON_3_13,
+            memory_size=512,
+            timeout=Duration.minutes(5),
+            environment={
+                "REPOSITORY_TYPE": "dynamodb",
+                "ENTRIES_TABLE_NAME": entries_table.table_name,
+                "NARRATIVES_TABLE_NAME": narratives_table.table_name,
+                "LLM_TYPE": "openai",
+                **shared_env,
+            },
+        )
+
+        entries_table.grant_read_data(phase_fn)
+        narratives_table.grant_read_write_data(phase_fn)
+        for param in ssm_params:
+            param.grant_read(phase_fn)
+
+        events.Rule(
+            self, "WeeklyPhaseRule",
+            schedule=events.Schedule.cron(minute="15", hour="1", week_day="MON"),
+            targets=[targets.LambdaFunction(phase_fn)],
+        )
+
         events.Rule(
             self, "WeeklyNarrativeRule",
             schedule=events.Schedule.cron(minute="55", hour="23", week_day="SUN"),

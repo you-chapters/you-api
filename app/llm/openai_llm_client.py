@@ -1,16 +1,29 @@
+import json
+
 from openai import OpenAI
 
 from app.config import get_secret
 from app.llm.llm_client import LLMClient
 from app.models.entry import Entry
 
-_MODEL = "gpt-4o-mini"
-_SYSTEM_PROMPT = (
-    "You are a thoughtful personal journal assistant. "
+_NARRATIVE_MODEL = "gpt-4o-mini"
+_PHASE_MODEL = "gpt-4o"
+_NARRATIVE_SYSTEM = (
     "Write a warm, reflective, first-person narrative paragraph summarizing the provided diary entries. "
     "Use the language and the style of the entries. "
     "Write freely — no fixed structure. "
+    "Do not open with time markers like 'This week' or 'This month'. "
     "3–7 sentences."
+)
+_PHASE_SYSTEM = (
+    "Given diary entries from a coherent life chapter, produce two outputs:\n"
+    "1. title: A 2–5 word evocative chapter heading (e.g. 'The Quiet Rebuilding', 'Summer in Motion'). "
+    "No vague labels like 'Period 1' or corporate language.\n"
+    "2. description: 4–7 sentences of warm reflective prose describing the chapter's character, "
+    "emotional tone, who/what was prominent, and how it felt to live through it. "
+    "Use the language and style of the entries. "
+    "Do not open with time markers like 'This week' or 'This month'.\n"
+    'Respond with JSON: {"title": "...", "description": "..."}'
 )
 
 
@@ -26,10 +39,30 @@ class OpenAILLMClient(LLMClient):
             for e in sorted(entries, key=lambda e: e.timestamp)
         )
         response = self._client.chat.completions.create(
-            model=_MODEL,
+            model=_NARRATIVE_MODEL,
             messages=[
-                {"role": "system", "content": _SYSTEM_PROMPT},
+                {"role": "system", "content": _NARRATIVE_SYSTEM},
                 {"role": "user", "content": f"Period: {period_label}\n\n{body}"},
             ],
         )
         return response.choices[0].message.content or ""
+
+    def generate_phase(self, entries: list[Entry], signals_summary: str, hint: str) -> tuple[str, str]:
+        if not entries:
+            return "Quiet Chapter", "No entries recorded during this phase."
+        body = "\n\n".join(
+            f"[{e.timestamp[:10]}] {e.entry}"
+            for e in sorted(entries, key=lambda e: e.timestamp)
+        )
+        user_content = f"Signals: {signals_summary}\nCharacter hint: {hint}\n\n{body}"
+        response = self._client.chat.completions.create(
+            model=_PHASE_MODEL,
+            messages=[
+                {"role": "system", "content": _PHASE_SYSTEM},
+                {"role": "user", "content": user_content},
+            ],
+            response_format={"type": "json_object"},
+        )
+        raw = response.choices[0].message.content or "{}"
+        data = json.loads(raw)
+        return data.get("title", "Unnamed Chapter"), data.get("description", "")
