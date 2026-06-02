@@ -1,8 +1,19 @@
 import boto3
 from abc import ABC, abstractmethod
+from decimal import Decimal
 
 from app.models.narrative import NarrativeSummary
 from app.models.phase import PhaseIndex, PhaseRecord
+
+
+def _floats_to_decimal(obj):
+    if isinstance(obj, float):
+        return Decimal(str(obj))
+    if isinstance(obj, dict):
+        return {k: _floats_to_decimal(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_floats_to_decimal(v) for v in obj]
+    return obj
 
 
 class NarrativeRepository(ABC):
@@ -62,7 +73,7 @@ class DynamoDBNarrativeRepository(NarrativeRepository):
         self._table.put_item(Item={
             "user_id": user_id,
             "record_id": f"phase#{phase_id}",
-            **record.model_dump(),
+            **_floats_to_decimal(record.model_dump()),
         })
 
     def batch_get_phases(self, user_id: str, phase_ids: list[str]) -> list[PhaseRecord]:
