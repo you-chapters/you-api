@@ -10,7 +10,7 @@ _NARRATIVE_MODEL = "gpt-4o-mini"
 _PHASE_MODEL = "gpt-4o"
 _NARRATIVE_SYSTEM = (
     "Write a warm, reflective, first-person narrative paragraph summarizing the provided diary entries. "
-    "Use the language and the style of the entries. "
+    "Detect the language of the entries and write in that same language. "
     "Write freely — no fixed structure. "
     "Do not open with time markers like 'This week' or 'This month'. "
     "3–7 sentences."
@@ -21,7 +21,7 @@ _PHASE_SYSTEM = (
     "No vague labels like 'Period 1' or corporate language.\n"
     "2. description: 4–7 sentences of warm reflective prose describing the chapter's character, "
     "emotional tone, who/what was prominent, and how it felt to live through it. "
-    "Use the language and style of the entries. "
+    "Detect the language of the diary entries and write both the title and description in that same language. "
     "Do not open with time markers like 'This week' or 'This month'.\n"
     'Respond with JSON: {"title": "...", "description": "..."}'
 )
