@@ -1,5 +1,5 @@
 import boto3
-from boto3.dynamodb.conditions import Key
+from boto3.dynamodb.conditions import Attr, Key
 
 from app.models.entry import Entry
 from app.repositories.entry_repository import EntryRepository
@@ -18,8 +18,17 @@ class DynamoDBEntryRepository(EntryRepository):
         item = response.get("Item")
         return Entry(**item) if item else None
 
-    def list_by_user(self, user_id: str) -> list[Entry]:
-        response = self._table.query(KeyConditionExpression=Key("user_id").eq(user_id))
+    def list_by_user(self, user_id: str, from_ts: str | None = None, to_ts: str | None = None) -> list[Entry]:
+        kwargs: dict = {"KeyConditionExpression": Key("user_id").eq(user_id)}
+        filter_expr = None
+        if from_ts is not None:
+            filter_expr = Attr("timestamp").gte(from_ts)
+        if to_ts is not None:
+            cond = Attr("timestamp").lt(to_ts)
+            filter_expr = filter_expr & cond if filter_expr else cond
+        if filter_expr is not None:
+            kwargs["FilterExpression"] = filter_expr
+        response = self._table.query(**kwargs)
         return [Entry(**item) for item in response["Items"]]
 
     def get_many(self, user_id: str, entry_ids: list[str]) -> list[Entry]:

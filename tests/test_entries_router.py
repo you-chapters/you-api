@@ -21,6 +21,16 @@ def client() -> TestClient:
 
 
 @pytest.fixture
+def service_client():
+    repo = InMemoryEntryRepository()
+    service = EntryService(repo)
+    app.dependency_overrides[get_service] = lambda: service
+    app.dependency_overrides[get_current_user_id] = lambda: USER_ID
+    yield TestClient(app), service
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture
 def search_client() -> TestClient:
     repo = InMemoryEntryRepository()
     embedding = InMemoryEmbeddingClient()
@@ -123,6 +133,49 @@ def test_search_entries_rejects_oversized_query(search_client) -> None:
     response = client.post("/entries/search", json={"query": "q" * 1_001})
 
     assert response.status_code == 422
+
+
+def test_list_entries_with_from_date(service_client) -> None:
+    from app.models.entry import Entry
+    client, service = service_client
+    service._repository.save(Entry(user_id=USER_ID, entry_id="e1", entry="a", timestamp="2026-06-01T10:00:00+00:00"))
+    service._repository.save(Entry(user_id=USER_ID, entry_id="e2", entry="b", timestamp="2026-06-08T10:00:00+00:00"))
+
+    response = client.get("/entries?from_date=2026-06-02")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert data[0]["entry_id"] == "e2"
+
+
+def test_list_entries_with_to_date(service_client) -> None:
+    from app.models.entry import Entry
+    client, service = service_client
+    service._repository.save(Entry(user_id=USER_ID, entry_id="e1", entry="a", timestamp="2026-06-01T10:00:00+00:00"))
+    service._repository.save(Entry(user_id=USER_ID, entry_id="e2", entry="b", timestamp="2026-06-08T10:00:00+00:00"))
+
+    response = client.get("/entries?to_date=2026-06-07")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert data[0]["entry_id"] == "e1"
+
+
+def test_list_entries_with_date_range(service_client) -> None:
+    from app.models.entry import Entry
+    client, service = service_client
+    service._repository.save(Entry(user_id=USER_ID, entry_id="e1", entry="a", timestamp="2026-06-01T10:00:00+00:00"))
+    service._repository.save(Entry(user_id=USER_ID, entry_id="e2", entry="b", timestamp="2026-06-05T10:00:00+00:00"))
+    service._repository.save(Entry(user_id=USER_ID, entry_id="e3", entry="c", timestamp="2026-06-10T10:00:00+00:00"))
+
+    response = client.get("/entries?from_date=2026-06-02&to_date=2026-06-08")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert data[0]["entry_id"] == "e2"
 
 
 def test_get_summary_empty(client: TestClient) -> None:

@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -55,5 +55,10 @@ def get_entry(entry_id: str, user_id: str = Depends(get_current_user_id), servic
 
 
 @router.get("", response_model=list[Entry])
-def list_entries(user_id: str = Depends(get_current_user_id), service: EntryService = Depends(get_service)) -> list[Entry]:
-    return service.list_entries(user_id)
+def list_entries(
+    from_date: date | None = None,
+    to_date: date | None = None,
+    user_id: str = Depends(get_current_user_id),
+    service: EntryService = Depends(get_service),
+) -> list[Entry]:
+    return service.list_entries(user_id, from_date=from_date, to_date=to_date)

@@ -1,6 +1,6 @@
 import uuid
 from collections import Counter
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from app.embedding.embedding_client import EmbeddingClient
 from app.models.entry import CreateEntryRequest, Entry
@@ -34,8 +34,10 @@ class EntryService:
     def get_entry(self, user_id: str, entry_id: str) -> Entry | None:
         return self._repository.get(user_id, entry_id)
 
-    def list_entries(self, user_id: str) -> list[Entry]:
-        entries = self._repository.list_by_user(user_id)
+    def list_entries(self, user_id: str, from_date: date | None = None, to_date: date | None = None) -> list[Entry]:
+        from_ts = from_date.isoformat() if from_date is not None else None
+        to_ts = (to_date + timedelta(days=1)).isoformat() if to_date is not None else None
+        entries = self._repository.list_by_user(user_id, from_ts=from_ts, to_ts=to_ts)
         return sorted(entries, key=lambda e: e.timestamp, reverse=True)
 
     def get_summary(self, user_id: str, period_days: int = 30) -> PeriodSummary:

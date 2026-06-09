@@ -72,6 +72,40 @@ def test_list_entries_returns_latest_first(service: EntryService) -> None:
     assert entries[2].entry_id == e1.entry_id
 
 
+def test_list_entries_filters_by_from_date(service: EntryService) -> None:
+    from datetime import date
+    service._repository.save(Entry(user_id="user-1", entry_id="e1", entry="a", timestamp="2026-06-01T10:00:00+00:00"))
+    service._repository.save(Entry(user_id="user-1", entry_id="e2", entry="b", timestamp="2026-06-08T10:00:00+00:00"))
+
+    entries = service.list_entries("user-1", from_date=date(2026, 6, 2))
+
+    assert len(entries) == 1
+    assert entries[0].entry_id == "e2"
+
+
+def test_list_entries_filters_by_to_date(service: EntryService) -> None:
+    from datetime import date
+    service._repository.save(Entry(user_id="user-1", entry_id="e1", entry="a", timestamp="2026-06-01T10:00:00+00:00"))
+    service._repository.save(Entry(user_id="user-1", entry_id="e2", entry="b", timestamp="2026-06-08T10:00:00+00:00"))
+
+    entries = service.list_entries("user-1", to_date=date(2026, 6, 7))
+
+    assert len(entries) == 1
+    assert entries[0].entry_id == "e1"
+
+
+def test_list_entries_filters_by_date_range(service: EntryService) -> None:
+    from datetime import date
+    service._repository.save(Entry(user_id="user-1", entry_id="e1", entry="a", timestamp="2026-06-01T10:00:00+00:00"))
+    service._repository.save(Entry(user_id="user-1", entry_id="e2", entry="b", timestamp="2026-06-05T10:00:00+00:00"))
+    service._repository.save(Entry(user_id="user-1", entry_id="e3", entry="c", timestamp="2026-06-10T10:00:00+00:00"))
+
+    entries = service.list_entries("user-1", from_date=date(2026, 6, 2), to_date=date(2026, 6, 8))
+
+    assert len(entries) == 1
+    assert entries[0].entry_id == "e2"
+
+
 def test_search_entries_raises_when_not_configured(service: EntryService) -> None:
     with pytest.raises(RuntimeError, match="Search not configured"):
         service.search_entries("user-1", "anything")
