@@ -224,7 +224,7 @@ def test_ask_question_returns_answer_and_sources(qa_client) -> None:
     assert response.status_code == 200
     data = response.json()
     assert data["answer"]
-    assert created["entry_id"] in data["sources"]
+    assert any(s["entry_id"] == created["entry_id"] for s in data["sources"])
 
 
 def test_ask_question_rejects_oversized_question(qa_client) -> None:
