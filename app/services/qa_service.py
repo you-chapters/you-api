@@ -11,4 +11,4 @@ class QaService:
     def ask_question(self, user_id: str, question: str) -> QaResult:
         entries = self._entry_service.search_entries(user_id, question)
         answer = self._llm_client.answer_question(entries, question)
-        return QaResult(answer=answer, sources=[e.entry_id for e in entries])
+        return QaResult(answer=answer, sources=entries)

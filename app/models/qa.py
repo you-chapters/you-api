@@ -1,5 +1,7 @@
 from pydantic import BaseModel, Field
 
+from app.models.entry import Entry
+
 
 class QaRequest(BaseModel):
     question: str = Field(..., max_length=1000)
@@ -7,4 +9,4 @@ class QaRequest(BaseModel):
 
 class QaResult(BaseModel):
     answer: str
-    sources: list[str]
+    sources: list[Entry]

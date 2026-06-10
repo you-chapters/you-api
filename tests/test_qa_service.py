@@ -19,7 +19,7 @@ def services():
     return entry_service, qa_service, embedding, vector_repo
 
 
-def test_ask_question_returns_answer_and_source_ids(services) -> None:
+def test_ask_question_returns_answer_and_sources(services) -> None:
     entry_service, qa_service, embedding, vector_repo = services
     entry = entry_service.create_entry("user-1", CreateEntryRequest(entry="I went hiking today."))
     vector_repo.upsert(entry.entry_id, "user-1", embedding.embed("hiking"), 1000)
@@ -27,7 +27,7 @@ def test_ask_question_returns_answer_and_source_ids(services) -> None:
     result = qa_service.ask_question("user-1", "What did I do today?")
 
     assert result.answer
-    assert entry.entry_id in result.sources
+    assert any(s.entry_id == entry.entry_id for s in result.sources)
 
 
 def test_ask_question_returns_empty_sources_when_nothing_indexed(services) -> None:
@@ -48,5 +48,6 @@ def test_ask_question_respects_user_isolation(services) -> None:
 
     result = qa_service.ask_question("user-1", "what did I write?")
 
-    assert e1.entry_id in result.sources
-    assert e2.entry_id not in result.sources
+    source_ids = [s.entry_id for s in result.sources]
+    assert e1.entry_id in source_ids
+    assert e2.entry_id not in source_ids

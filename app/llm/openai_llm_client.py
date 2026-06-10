@@ -58,8 +58,23 @@ class OpenAILLMClient(LLMClient):
     def answer_question(self, entries: list[Entry], question: str) -> str:
         if not entries:
             return "I don't have any journal entries to answer that question."
+
+        def _entry_block(e: Entry) -> str:
+            lines = [f"[{e.timestamp[:10]}]"]
+            if e.tags:
+                if e.tags.topics:
+                    lines.append(f"Topics: {', '.join(e.tags.topics)}")
+                if e.tags.people:
+                    lines.append(f"People: {', '.join(e.tags.people)}")
+                if e.tags.mood:
+                    lines.append(f"Mood: {e.tags.mood}")
+                if e.tags.locations:
+                    lines.append(f"Location: {', '.join(e.tags.locations)}")
+            lines.append(e.entry)
+            return "\n".join(lines)
+
         body = "\n\n".join(
-            f"[{e.timestamp[:10]}] {e.entry}"
+            _entry_block(e)
             for e in sorted(entries, key=lambda e: e.timestamp)
         )
         response = self._client.chat.completions.create(
