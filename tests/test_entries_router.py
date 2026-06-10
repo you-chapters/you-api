@@ -1,12 +1,14 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from app.dependencies import get_current_user_id, get_service
+from app.dependencies import get_current_user_id, get_entry_service, get_qa_service
 from app.embedding.in_memory_embedding_client import InMemoryEmbeddingClient
+from app.llm.in_memory_llm_client import InMemoryLLMClient
 from app.main import app
 from app.repositories.in_memory_entry_repository import InMemoryEntryRepository
 from app.repositories.in_memory_vector_repository import InMemoryVectorRepository
 from app.services.entry_service import EntryService
+from app.services.qa_service import QaService
 
 USER_ID = "test-user"
 
@@ -14,7 +16,7 @@ USER_ID = "test-user"
 @pytest.fixture
 def client() -> TestClient:
     service = EntryService(InMemoryEntryRepository())
-    app.dependency_overrides[get_service] = lambda: service
+    app.dependency_overrides[get_entry_service] = lambda: service
     app.dependency_overrides[get_current_user_id] = lambda: USER_ID
     yield TestClient(app)
     app.dependency_overrides.clear()
@@ -24,7 +26,7 @@ def client() -> TestClient:
 def service_client():
     repo = InMemoryEntryRepository()
     service = EntryService(repo)
-    app.dependency_overrides[get_service] = lambda: service
+    app.dependency_overrides[get_entry_service] = lambda: service
     app.dependency_overrides[get_current_user_id] = lambda: USER_ID
     yield TestClient(app), service
     app.dependency_overrides.clear()
@@ -36,7 +38,7 @@ def search_client() -> TestClient:
     embedding = InMemoryEmbeddingClient()
     vector_repo = InMemoryVectorRepository()
     service = EntryService(repo, embedding, vector_repo)
-    app.dependency_overrides[get_service] = lambda: service
+    app.dependency_overrides[get_entry_service] = lambda: service
     app.dependency_overrides[get_current_user_id] = lambda: USER_ID
     yield TestClient(app), service, embedding, vector_repo
     app.dependency_overrides.clear()
@@ -196,3 +198,37 @@ def test_get_summary_period_param(client: TestClient) -> None:
 
     assert response.status_code == 200
     assert response.json()["period_days"] == 7
+
+
+@pytest.fixture
+def qa_client():
+    repo = InMemoryEntryRepository()
+    embedding = InMemoryEmbeddingClient()
+    vector_repo = InMemoryVectorRepository()
+    entry_service = EntryService(repo, embedding, vector_repo)
+    qa_service = QaService(entry_service, InMemoryLLMClient())
+    app.dependency_overrides[get_entry_service] = lambda: entry_service
+    app.dependency_overrides[get_qa_service] = lambda: qa_service
+    app.dependency_overrides[get_current_user_id] = lambda: USER_ID
+    yield TestClient(app), entry_service, embedding, vector_repo
+    app.dependency_overrides.clear()
+
+
+def test_ask_question_returns_answer_and_sources(qa_client) -> None:
+    client, entry_service, embedding, vector_repo = qa_client
+    created = client.post("/entries", json={"entry": "I went hiking today."}).json()
+    vector_repo.upsert(created["entry_id"], USER_ID, embedding.embed("hiking"), 1000)
+
+    response = client.post("/entries/ask", json={"question": "What did I do today?"})
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["answer"]
+    assert created["entry_id"] in data["sources"]
+
+
+def test_ask_question_rejects_oversized_question(qa_client) -> None:
+    client, *_ = qa_client
+    response = client.post("/entries/ask", json={"question": "q" * 1_001})
+
+    assert response.status_code == 422

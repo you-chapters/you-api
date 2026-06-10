@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 import app.dependencies as deps
-from app.dependencies import get_current_user_id, get_narrative_service, get_service
+from app.dependencies import get_current_user_id, get_narrative_service, get_qa_service, get_entry_service
 from app.embedding.in_memory_embedding_client import InMemoryEmbeddingClient
 from app.llm.in_memory_llm_client import InMemoryLLMClient
 from app.repositories.in_memory_entry_repository import InMemoryEntryRepository
@@ -11,6 +11,7 @@ from app.repositories.in_memory_narrative_repository import InMemoryNarrativeRep
 from app.repositories.in_memory_vector_repository import InMemoryVectorRepository
 from app.services.entry_service import EntryService
 from app.services.narrative_service import NarrativeService
+from app.services.qa_service import QaService
 
 
 @pytest.fixture(autouse=True)
@@ -103,10 +104,16 @@ def test_narrative_repository_returns_dynamodb_when_configured(monkeypatch) -> N
         assert isinstance(deps._narrative_repository(), DynamoDBNarrativeRepository)
 
 
-def test_get_service_returns_entry_service(monkeypatch) -> None:
+def test_get_entry_service_returns_entry_service(monkeypatch) -> None:
     monkeypatch.delenv("REPOSITORY_TYPE", raising=False)
 
-    assert isinstance(get_service(), EntryService)
+    assert isinstance(get_entry_service(), EntryService)
+
+
+def test_get_qa_service_returns_qa_service(monkeypatch) -> None:
+    monkeypatch.delenv("REPOSITORY_TYPE", raising=False)
+
+    assert isinstance(get_qa_service(), QaService)
 
 
 def test_get_narrative_service_returns_narrative_service(monkeypatch) -> None:

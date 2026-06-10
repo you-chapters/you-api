@@ -74,3 +74,4 @@ class EntryService:
         vector = self._embedding_client.embed(query)
         entry_ids = self._vector_repository.search(user_id, vector)
         return self._repository.get_many(user_id, entry_ids)
+

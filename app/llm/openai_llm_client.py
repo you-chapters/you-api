@@ -8,6 +8,14 @@ from app.models.entry import Entry
 
 _NARRATIVE_MODEL = "gpt-4o-mini"
 _PHASE_MODEL = "gpt-4o"
+_QA_MODEL = "gpt-4o-mini"
+_QA_SYSTEM = (
+    "You are a personal memory assistant. "
+    "Answer the user's question ONLY using information explicitly found in the journal entries provided below. "
+    "If the entries do not contain enough information to answer the question, say so honestly. "
+    "Do not speculate, invent, or draw on knowledge outside the provided entries. "
+    "Respond in the same language as the question."
+)
 _NARRATIVE_SYSTEM = (
     "Write a warm, reflective, first-person narrative paragraph summarizing the provided diary entries. "
     "Detect the language of the entries and write in that same language. "
@@ -43,6 +51,22 @@ class OpenAILLMClient(LLMClient):
             messages=[
                 {"role": "system", "content": _NARRATIVE_SYSTEM},
                 {"role": "user", "content": f"Period: {period_label}\n\n{body}"},
+            ],
+        )
+        return response.choices[0].message.content or ""
+
+    def answer_question(self, entries: list[Entry], question: str) -> str:
+        if not entries:
+            return "I don't have any journal entries to answer that question."
+        body = "\n\n".join(
+            f"[{e.timestamp[:10]}] {e.entry}"
+            for e in sorted(entries, key=lambda e: e.timestamp)
+        )
+        response = self._client.chat.completions.create(
+            model=_QA_MODEL,
+            messages=[
+                {"role": "system", "content": _QA_SYSTEM},
+                {"role": "user", "content": f"{question}\n\nEntries:\n\n{body}"},
             ],
         )
         return response.choices[0].message.content or ""

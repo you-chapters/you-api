@@ -13,6 +13,7 @@ from app.repositories.vector_repository import VectorRepository
 from app.services.entry_service import EntryService
 from app.services.narrative_service import NarrativeService
 from app.services.phase_service import PhaseService
+from app.services.qa_service import QaService
 
 logger = get_logger(__name__)
 
@@ -64,8 +65,12 @@ def _narrative_repository() -> NarrativeRepository:
     return InMemoryNarrativeRepository()
 
 
-def get_service() -> EntryService:
+def get_entry_service() -> EntryService:
     return EntryService(_repository(), _embedding_client(), _vector_repository())
+
+
+def get_qa_service() -> QaService:
+    return QaService(get_entry_service(), _llm_client())
 
 
 def get_narrative_service() -> NarrativeService:

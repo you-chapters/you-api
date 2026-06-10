@@ -11,7 +11,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 import app.handler_embedding as handler_module
-from app.dependencies import get_current_user_id, get_service
+from app.dependencies import get_current_user_id, get_entry_service
 from app.embedding.in_memory_embedding_client import InMemoryEmbeddingClient
 from app.main import app
 from app.models.entry_tags import EntryTags
@@ -38,7 +38,7 @@ _REALISTIC_TAGS = EntryTags(
 @pytest.fixture
 def http_client():
     service = EntryService(InMemoryEntryRepository())
-    app.dependency_overrides[get_service] = lambda: service
+    app.dependency_overrides[get_entry_service] = lambda: service
     app.dependency_overrides[get_current_user_id] = lambda: USER_ID
     yield TestClient(app)
     app.dependency_overrides.clear()

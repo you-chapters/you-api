@@ -8,3 +8,6 @@ class InMemoryLLMClient(LLMClient):
 
     def generate_phase(self, entries: list[Entry], signals_summary: str, hint: str) -> tuple[str, str]:
         return (f"Stub Phase ({len(entries)} entries)", f"Stub description. {hint}")
+
+    def answer_question(self, entries: list[Entry], question: str) -> str:
+        return f"Based on {len(entries)} entries: stub answer for '{question}'"

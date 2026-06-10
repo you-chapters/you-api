@@ -9,3 +9,6 @@ class LLMClient(ABC):
 
     @abstractmethod
     def generate_phase(self, entries: list[Entry], signals_summary: str, hint: str) -> tuple[str, str]: ...
+
+    @abstractmethod
+    def answer_question(self, entries: list[Entry], question: str) -> str: ...
