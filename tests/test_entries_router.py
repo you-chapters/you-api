@@ -227,6 +227,39 @@ def test_ask_question_returns_answer_and_sources(qa_client) -> None:
     assert any(s["entry_id"] == created["entry_id"] for s in data["sources"])
 
 
+def test_get_on_this_day_returns_entries(service_client) -> None:
+    from unittest.mock import patch
+    from datetime import datetime, timezone
+    from app.models.entry import Entry
+    client, service = service_client
+    service._repository.save(Entry(user_id=USER_ID, entry_id="e1", entry="a", timestamp="2025-06-11T10:00:00+00:00"))
+    service._repository.save(Entry(user_id=USER_ID, entry_id="e2", entry="b", timestamp="2025-07-04T10:00:00+00:00"))
+    fixed = datetime(2026, 6, 11, 12, 0, 0, tzinfo=timezone.utc)
+
+    with patch("app.services.entry_service.datetime") as mock_dt:
+        mock_dt.now.return_value = fixed
+        response = client.get("/entries/on-this-day")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert data[0]["entry_id"] == "e1"
+
+
+def test_get_on_this_day_returns_empty_list(service_client) -> None:
+    from unittest.mock import patch
+    from datetime import datetime, timezone
+    client, _ = service_client
+    fixed = datetime(2026, 6, 11, 12, 0, 0, tzinfo=timezone.utc)
+
+    with patch("app.services.entry_service.datetime") as mock_dt:
+        mock_dt.now.return_value = fixed
+        response = client.get("/entries/on-this-day")
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
 def test_ask_question_rejects_oversized_question(qa_client) -> None:
     client, *_ = qa_client
     response = client.post("/entries/ask", json={"question": "q" * 1_001})

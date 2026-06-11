@@ -23,3 +23,10 @@ class InMemoryEntryRepository(EntryRepository):
 
     def get_many(self, user_id: str, entry_ids: list[str]) -> list[Entry]:
         return [e for eid in entry_ids if (e := self.get(user_id, eid)) is not None]
+
+    def list_by_day(self, user_id: str, month: int, day: int) -> list[Entry]:
+        entries = [
+            e for e in self._store.values()
+            if e.user_id == user_id and e.timestamp[5:7] == f"{month:02d}" and e.timestamp[8:10] == f"{day:02d}"
+        ]
+        return sorted(entries, key=lambda e: e.timestamp, reverse=True)

@@ -72,3 +72,64 @@ def test_get_many_returns_entries(repo, mock_resource) -> None:
 
     assert len(result) == 2
     assert all(isinstance(e, Entry) for e in result)
+
+
+def test_list_by_day_queries_past_10_years(repo, mock_resource) -> None:
+    from unittest.mock import call, patch
+    from datetime import datetime, timezone
+    fixed = datetime(2026, 6, 11, 12, 0, 0, tzinfo=timezone.utc)
+    mock_resource.Table.return_value.query.return_value = {"Items": []}
+
+    with patch("app.repositories.dynamodb_entry_repository.datetime") as mock_dt:
+        mock_dt.now.return_value = fixed
+        repo.list_by_day("u1", 6, 11)
+
+    assert mock_resource.Table.return_value.query.call_count == 10
+
+
+def test_list_by_day_returns_entries_sorted_newest_first(repo, mock_resource) -> None:
+    from unittest.mock import patch
+    from datetime import datetime, timezone
+    fixed = datetime(2026, 6, 11, 12, 0, 0, tzinfo=timezone.utc)
+    items_2024 = [_item(entry_id="e1", timestamp="2024-06-11T10:00:00")]
+    items_2023 = [_item(entry_id="e2", timestamp="2023-06-11T08:00:00")]
+    mock_resource.Table.return_value.query.side_effect = [
+        {"Items": items_2024},
+        {"Items": items_2023},
+        *[{"Items": []} for _ in range(8)],
+    ]
+
+    with patch("app.repositories.dynamodb_entry_repository.datetime") as mock_dt:
+        mock_dt.now.return_value = fixed
+        result = repo.list_by_day("u1", 6, 11)
+
+    assert result[0].entry_id == "e1"
+    assert result[1].entry_id == "e2"
+
+
+def test_list_by_day_skips_invalid_dates(repo, mock_resource) -> None:
+    from unittest.mock import patch
+    from datetime import datetime, timezone
+    fixed = datetime(2024, 2, 29, 12, 0, 0, tzinfo=timezone.utc)
+    mock_resource.Table.return_value.query.return_value = {"Items": []}
+
+    with patch("app.repositories.dynamodb_entry_repository.datetime") as mock_dt:
+        mock_dt.now.return_value = fixed
+        result = repo.list_by_day("u1", 2, 29)
+
+    assert isinstance(result, list)
+    assert mock_resource.Table.return_value.query.call_count < 10
+
+
+def test_list_by_day_uses_user_timestamp_index(repo, mock_resource) -> None:
+    from unittest.mock import patch
+    from datetime import datetime, timezone
+    fixed = datetime(2026, 6, 11, 12, 0, 0, tzinfo=timezone.utc)
+    mock_resource.Table.return_value.query.return_value = {"Items": []}
+
+    with patch("app.repositories.dynamodb_entry_repository.datetime") as mock_dt:
+        mock_dt.now.return_value = fixed
+        repo.list_by_day("u1", 6, 11)
+
+    call_kwargs = mock_resource.Table.return_value.query.call_args_list[0][1]
+    assert call_kwargs["IndexName"] == "user_timestamp_index"

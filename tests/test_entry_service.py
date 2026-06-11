@@ -240,6 +240,63 @@ def test_get_summary_skips_entries_without_tags(service: EntryService) -> None:
     assert summary.top_locations == []
 
 
+def test_get_on_this_day_returns_entries_for_today(service: EntryService) -> None:
+    from unittest.mock import patch
+    from datetime import datetime, timezone
+    fixed = datetime(2026, 6, 11, 12, 0, 0, tzinfo=timezone.utc)
+    service._repository.save(Entry(user_id="user-1", entry_id="e1", entry="a", timestamp="2025-06-11T10:00:00+00:00"))
+    service._repository.save(Entry(user_id="user-1", entry_id="e2", entry="b", timestamp="2025-07-04T10:00:00+00:00"))
+
+    with patch("app.services.entry_service.datetime") as mock_dt:
+        mock_dt.now.return_value = fixed
+        results = service.get_on_this_day("user-1")
+
+    assert len(results) == 1
+    assert results[0].entry_id == "e1"
+
+
+def test_get_on_this_day_returns_empty_when_no_matching_entries(service: EntryService) -> None:
+    from unittest.mock import patch
+    from datetime import datetime, timezone
+    fixed = datetime(2026, 6, 11, 12, 0, 0, tzinfo=timezone.utc)
+
+    with patch("app.services.entry_service.datetime") as mock_dt:
+        mock_dt.now.return_value = fixed
+        results = service.get_on_this_day("user-1")
+
+    assert results == []
+
+
+def test_get_on_this_day_isolates_by_user(service: EntryService) -> None:
+    from unittest.mock import patch
+    from datetime import datetime, timezone
+    fixed = datetime(2026, 6, 11, 12, 0, 0, tzinfo=timezone.utc)
+    service._repository.save(Entry(user_id="user-1", entry_id="e1", entry="a", timestamp="2025-06-11T10:00:00+00:00"))
+    service._repository.save(Entry(user_id="user-2", entry_id="e2", entry="b", timestamp="2025-06-11T10:00:00+00:00"))
+
+    with patch("app.services.entry_service.datetime") as mock_dt:
+        mock_dt.now.return_value = fixed
+        results = service.get_on_this_day("user-1")
+
+    assert len(results) == 1
+    assert results[0].user_id == "user-1"
+
+
+def test_get_on_this_day_returns_latest_first(service: EntryService) -> None:
+    from unittest.mock import patch
+    from datetime import datetime, timezone
+    fixed = datetime(2026, 6, 11, 12, 0, 0, tzinfo=timezone.utc)
+    service._repository.save(Entry(user_id="user-1", entry_id="e1", entry="a", timestamp="2023-06-11T08:00:00+00:00"))
+    service._repository.save(Entry(user_id="user-1", entry_id="e2", entry="b", timestamp="2025-06-11T10:00:00+00:00"))
+
+    with patch("app.services.entry_service.datetime") as mock_dt:
+        mock_dt.now.return_value = fixed
+        results = service.get_on_this_day("user-1")
+
+    assert results[0].entry_id == "e2"
+    assert results[1].entry_id == "e1"
+
+
 def test_get_summary_isolates_by_user(service: EntryService) -> None:
     service._repository.save(Entry(
         user_id="user-1", entry_id="e1", entry="a",

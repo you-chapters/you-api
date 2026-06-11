@@ -53,6 +53,14 @@ def get_narrative(
     return service.get_narrative(user_id, period_type=type, period_key=resolved_key, force_refresh=refresh)
 
 
+@router.get("/on-this-day", response_model=list[Entry])
+def get_on_this_day(
+    user_id: str = Depends(get_current_user_id),
+    service: EntryService = Depends(get_entry_service),
+) -> list[Entry]:
+    return service.get_on_this_day(user_id)
+
+
 @router.get("/{entry_id}", response_model=Entry)
 def get_entry(entry_id: str, user_id: str = Depends(get_current_user_id), service: EntryService = Depends(get_entry_service)) -> Entry:
     entry = service.get_entry(user_id, entry_id)

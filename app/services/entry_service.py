@@ -68,6 +68,10 @@ class EntryService:
             top_locations=[LocationCount(location=l, count=c) for l, c in location_counter.most_common()],
         )
 
+    def get_on_this_day(self, user_id: str) -> list[Entry]:
+        today = datetime.now(timezone.utc)
+        return self._repository.list_by_day(user_id, today.month, today.day)
+
     def search_entries(self, user_id: str, query: str) -> list[Entry]:
         if not self._embedding_client or not self._vector_repository:
             raise RuntimeError("Search not configured")

@@ -24,6 +24,15 @@ class DynamoDBStack(Stack):
 
         self.test_table = dynamodb.Table(self, "TestEntriesTable", table_name="test_entries", **table_kwargs)
 
+        timestamp_gsi = dict(
+            index_name="user_timestamp_index",
+            partition_key=dynamodb.Attribute(name="user_id", type=dynamodb.AttributeType.STRING),
+            sort_key=dynamodb.Attribute(name="timestamp", type=dynamodb.AttributeType.STRING),
+            projection_type=dynamodb.ProjectionType.ALL,
+        )
+        self.entries_table.add_global_secondary_index(**timestamp_gsi)
+        self.test_table.add_global_secondary_index(**timestamp_gsi)
+
         self.narratives_table = dynamodb.Table(
             self,
             "NarrativesTable",
