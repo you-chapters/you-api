@@ -61,21 +61,30 @@ def test_force_refresh_regenerates():
     assert result.generated_at >= first.generated_at
 
 
-def test_stale_current_period_regenerates(monkeypatch):
-    svc = _make_service()
-    yesterday = (TODAY - timedelta(days=1)).isoformat()
-
+def test_week_not_stale_after_25h_returns_cached():
     from app.models.narrative import NarrativeSummary
+    svc = _make_service()
+    twenty_five_hours_ago = (datetime.now(timezone.utc) - timedelta(hours=25)).isoformat()
+    record = NarrativeSummary(
+        period_type="week", period_key=CURRENT_WEEK,
+        entry_count=0, text="recent enough",
+        generated_at=twenty_five_hours_ago, is_cached=False,
+    )
+    svc._narratives.save(USER, f"cache#week#{CURRENT_WEEK}", record)
+    result = svc.get_narrative(USER, "week", CURRENT_WEEK)
+    assert result.is_cached is True
+
+
+def test_week_stale_after_7_days_regenerates():
+    from app.models.narrative import NarrativeSummary
+    svc = _make_service()
+    eight_days_ago = (datetime.now(timezone.utc) - timedelta(days=8)).isoformat()
     stale = NarrativeSummary(
-        period_type="week",
-        period_key=CURRENT_WEEK,
-        entry_count=0,
-        text="old",
-        generated_at=f"{yesterday}T00:00:00+00:00",
-        is_cached=False,
+        period_type="week", period_key=CURRENT_WEEK,
+        entry_count=0, text="old",
+        generated_at=eight_days_ago, is_cached=False,
     )
     svc._narratives.save(USER, f"cache#week#{CURRENT_WEEK}", stale)
-
     result = svc.get_narrative(USER, "week", CURRENT_WEEK)
     assert result.is_cached is False
     assert result.text != "old"
@@ -192,22 +201,14 @@ def test_recent_cache_within_24h_returns_cached():
     assert svc_month.get_narrative(USER, "month", CURRENT_MONTH).is_cached is True
 
 
-def test_stale_cache_over_24h_regenerates():
+def test_month_stale_after_25h_regenerates():
     from app.models.narrative import NarrativeSummary
-    svc_week = _make_service()
-    svc_month = _make_service()
+    svc = _make_service()
     twenty_five_hours_ago = (datetime.now(timezone.utc) - timedelta(hours=25)).isoformat()
-
-    for svc, period_type, period_key in [
-        (svc_week, "week", CURRENT_WEEK),
-        (svc_month, "month", CURRENT_MONTH),
-    ]:
-        record = NarrativeSummary(
-            period_type=period_type, period_key=period_key,
-            entry_count=0, text="old",
-            generated_at=twenty_five_hours_ago, is_cached=False,
-        )
-        svc._narratives.save(USER, f"cache#{period_type}#{period_key}", record)
-
-    assert svc_week.get_narrative(USER, "week", CURRENT_WEEK).is_cached is False
-    assert svc_month.get_narrative(USER, "month", CURRENT_MONTH).is_cached is False
+    record = NarrativeSummary(
+        period_type="month", period_key=CURRENT_MONTH,
+        entry_count=0, text="old",
+        generated_at=twenty_five_hours_ago, is_cached=False,
+    )
+    svc._narratives.save(USER, f"cache#month#{CURRENT_MONTH}", record)
+    assert svc.get_narrative(USER, "month", CURRENT_MONTH).is_cached is False

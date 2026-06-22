@@ -54,7 +54,8 @@ class NarrativeService:
     def _is_stale(self, period_type: str, generated_at: str) -> bool:
         now = datetime.now(timezone.utc)
         generated = datetime.fromisoformat(generated_at)
-        return (now - generated) > timedelta(hours=24)
+        threshold = timedelta(days=7) if period_type == "week" else timedelta(hours=24)
+        return (now - generated) > threshold
 
     def _is_current_period(self, period_type: str, period_key: str) -> bool:
         today = datetime.now(timezone.utc).date()
