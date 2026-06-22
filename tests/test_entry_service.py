@@ -1,4 +1,5 @@
 import pytest
+from datetime import datetime, timedelta, timezone
 
 from app.embedding.in_memory_embedding_client import InMemoryEmbeddingClient
 from app.models.entry import CreateEntryRequest, Entry
@@ -6,6 +7,11 @@ from app.models.entry_tags import EntryTags
 from app.repositories.in_memory_entry_repository import InMemoryEntryRepository
 from app.repositories.in_memory_vector_repository import InMemoryVectorRepository
 from app.services.entry_service import EntryService
+
+
+def _days_ago(n: int, hour: int = 10) -> str:
+    dt = datetime.now(timezone.utc) - timedelta(days=n)
+    return dt.replace(hour=hour, minute=0, second=0, microsecond=0).isoformat()
 
 
 @pytest.fixture
@@ -154,7 +160,7 @@ def test_get_summary_empty(service: EntryService) -> None:
 def test_get_summary_counts_entries_in_period(service: EntryService) -> None:
     service._repository.save(Entry(
         user_id="user-1", entry_id="e1", entry="a",
-        timestamp="2026-05-19T10:00:00+00:00",
+        timestamp=_days_ago(5),
         tags=EntryTags(topics=["work"], people=["Alice"], mood="positive"),
     ))
     service._repository.save(Entry(
@@ -171,12 +177,12 @@ def test_get_summary_counts_entries_in_period(service: EntryService) -> None:
 def test_get_summary_aggregates_topics_and_people(service: EntryService) -> None:
     service._repository.save(Entry(
         user_id="user-1", entry_id="e1", entry="a",
-        timestamp="2026-05-18T10:00:00+00:00",
+        timestamp=_days_ago(6),
         tags=EntryTags(topics=["work", "health"], people=["Alice"]),
     ))
     service._repository.save(Entry(
         user_id="user-1", entry_id="e2", entry="b",
-        timestamp="2026-05-19T10:00:00+00:00",
+        timestamp=_days_ago(5),
         tags=EntryTags(topics=["work"], people=["Alice", "Bob"]),
     ))
 
@@ -191,12 +197,12 @@ def test_get_summary_aggregates_topics_and_people(service: EntryService) -> None
 def test_get_summary_aggregates_locations(service: EntryService) -> None:
     service._repository.save(Entry(
         user_id="user-1", entry_id="e1", entry="a",
-        timestamp="2026-05-18T10:00:00+00:00",
+        timestamp=_days_ago(6),
         tags=EntryTags(locations=["Paris", "London"]),
     ))
     service._repository.save(Entry(
         user_id="user-1", entry_id="e2", entry="b",
-        timestamp="2026-05-19T10:00:00+00:00",
+        timestamp=_days_ago(5),
         tags=EntryTags(locations=["Paris"]),
     ))
 
@@ -207,28 +213,29 @@ def test_get_summary_aggregates_locations(service: EntryService) -> None:
 
 
 def test_get_summary_mood_timeline_latest_entry_wins(service: EntryService) -> None:
+    today = (datetime.now(timezone.utc) - timedelta(days=5)).date().isoformat()
     service._repository.save(Entry(
         user_id="user-1", entry_id="e1", entry="a",
-        timestamp="2026-05-19T08:00:00+00:00",
+        timestamp=_days_ago(5, hour=8),
         tags=EntryTags(mood="negative"),
     ))
     service._repository.save(Entry(
         user_id="user-1", entry_id="e2", entry="b",
-        timestamp="2026-05-19T20:00:00+00:00",
+        timestamp=_days_ago(5, hour=20),
         tags=EntryTags(mood="positive"),
     ))
 
     summary = service.get_summary("user-1", period_days=30)
 
     assert len(summary.mood_timeline) == 1
-    assert summary.mood_timeline[0].date == "2026-05-19"
+    assert summary.mood_timeline[0].date == today
     assert summary.mood_timeline[0].mood == "positive"
 
 
 def test_get_summary_skips_entries_without_tags(service: EntryService) -> None:
     service._repository.save(Entry(
         user_id="user-1", entry_id="e1", entry="a",
-        timestamp="2026-05-19T10:00:00+00:00",
+        timestamp=_days_ago(5),
         tags=None,
     ))
 
@@ -300,12 +307,12 @@ def test_get_on_this_day_returns_latest_first(service: EntryService) -> None:
 def test_get_summary_isolates_by_user(service: EntryService) -> None:
     service._repository.save(Entry(
         user_id="user-1", entry_id="e1", entry="a",
-        timestamp="2026-05-19T10:00:00+00:00",
+        timestamp=_days_ago(5),
         tags=EntryTags(topics=["work"]),
     ))
     service._repository.save(Entry(
         user_id="user-2", entry_id="e2", entry="b",
-        timestamp="2026-05-19T10:00:00+00:00",
+        timestamp=_days_ago(5),
         tags=EntryTags(topics=["health"]),
     ))
 
