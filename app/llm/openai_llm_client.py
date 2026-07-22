@@ -21,6 +21,8 @@ _NARRATIVE_SYSTEM = (
     "Detect the language of the entries and write in that same language. "
     "Write freely — no fixed structure. "
     "Do not open with time markers like 'This week' or 'This month'. "
+    "Only include details explicitly stated in the entries — do not invent or infer events, "
+    "emotions, or outcomes. If entries are sparse, keep the summary shorter rather than adding detail. "
     "3–7 sentences."
 )
 _PHASE_SYSTEM = (
