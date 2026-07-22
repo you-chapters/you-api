@@ -16,17 +16,23 @@ router = APIRouter(prefix="/entries", tags=["entries"])
 
 @router.post("", response_model=Entry, status_code=201)
 def create_entry(request: CreateEntryRequest, user_id: str = Depends(get_current_user_id), service: EntryService = Depends(get_entry_service)) -> Entry:
-    return service.create_entry(user_id, request)
+    # DECOMMISSIONED
+    raise HTTPException(status_code=410, detail="Gone")
+    # return service.create_entry(user_id, request)
 
 
 @router.post("/search", response_model=SearchResult)
 def search_entries(request: SearchRequest, user_id: str = Depends(get_current_user_id), service: EntryService = Depends(get_entry_service)) -> SearchResult:
-    return SearchResult(entries=service.search_entries(user_id, request.query))
+    # DECOMMISSIONED
+    raise HTTPException(status_code=410, detail="Gone")
+    # return SearchResult(entries=service.search_entries(user_id, request.query))
 
 
 @router.post("/ask", response_model=QaResult)
 def ask_question(request: QaRequest, user_id: str = Depends(get_current_user_id), qa_service: QaService = Depends(get_qa_service)) -> QaResult:
-    return qa_service.ask_question(user_id, request.question)
+    # DECOMMISSIONED
+    raise HTTPException(status_code=410, detail="Gone")
+    # return qa_service.ask_question(user_id, request.question)
 
 
 @router.get("/summary", response_model=PeriodSummary)
@@ -46,11 +52,13 @@ def get_narrative(
     user_id: str = Depends(get_current_user_id),
     service: NarrativeService = Depends(get_narrative_service),
 ) -> NarrativeSummary:
-    if type not in ("week", "month"):
-        raise HTTPException(status_code=422, detail="type must be 'week' or 'month'")
-    today = datetime.now(timezone.utc).date()
-    resolved_key = key or (today.strftime("%G-W%V") if type == "week" else today.strftime("%Y-%m"))
-    return service.get_narrative(user_id, period_type=type, period_key=resolved_key, force_refresh=refresh)
+    # DECOMMISSIONED
+    raise HTTPException(status_code=410, detail="Gone")
+    # if type not in ("week", "month"):
+    #     raise HTTPException(status_code=422, detail="type must be 'week' or 'month'")
+    # today = datetime.now(timezone.utc).date()
+    # resolved_key = key or (today.strftime("%G-W%V") if type == "week" else today.strftime("%Y-%m"))
+    # return service.get_narrative(user_id, period_type=type, period_key=resolved_key, force_refresh=refresh)
 
 
 @router.get("/on-this-day", response_model=list[Entry])

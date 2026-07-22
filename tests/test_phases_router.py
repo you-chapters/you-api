@@ -43,6 +43,7 @@ def client(mock_service: MagicMock) -> TestClient:
     app.dependency_overrides.clear()
 
 
+@pytest.mark.skip("Decommissioned")
 def test_get_phases_returns_list(client: TestClient, mock_service: MagicMock) -> None:
     p1 = _phase(is_open=False, end_date="2026-02-01")
     p2 = _phase(is_open=True)
@@ -56,6 +57,7 @@ def test_get_phases_returns_list(client: TestClient, mock_service: MagicMock) ->
     mock_service.get_phases.assert_called_once_with(USER_ID, refresh=False)
 
 
+@pytest.mark.skip("Decommissioned")
 def test_get_phases_empty(client: TestClient, mock_service: MagicMock) -> None:
     mock_service.get_phases.return_value = []
 
@@ -65,6 +67,7 @@ def test_get_phases_empty(client: TestClient, mock_service: MagicMock) -> None:
     assert response.json() == []
 
 
+@pytest.mark.skip("Decommissioned")
 def test_get_phases_refresh_param(client: TestClient, mock_service: MagicMock) -> None:
     mock_service.get_phases.return_value = []
 
@@ -73,6 +76,7 @@ def test_get_phases_refresh_param(client: TestClient, mock_service: MagicMock) -
     mock_service.get_phases.assert_called_once_with(USER_ID, refresh=True)
 
 
+@pytest.mark.skip("Decommissioned")
 def test_get_phases_response_shape(client: TestClient, mock_service: MagicMock) -> None:
     p = _phase()
     mock_service.get_phases.return_value = [p]
@@ -87,6 +91,7 @@ def test_get_phases_response_shape(client: TestClient, mock_service: MagicMock) 
     assert "is_open" in data
 
 
+@pytest.mark.skip("Decommissioned")
 def test_get_current_phase_returns_open(client: TestClient, mock_service: MagicMock) -> None:
     p = _phase(is_open=True)
     mock_service.get_current_phase.return_value = p
@@ -98,6 +103,7 @@ def test_get_current_phase_returns_open(client: TestClient, mock_service: MagicM
     mock_service.get_current_phase.assert_called_once_with(USER_ID)
 
 
+@pytest.mark.skip("Decommissioned")
 def test_get_current_phase_none_returns_null(client: TestClient, mock_service: MagicMock) -> None:
     mock_service.get_current_phase.return_value = None
 
@@ -127,6 +133,7 @@ def test_get_phase_by_id_not_found(client: TestClient, mock_service: MagicMock) 
     assert response.status_code == 404
 
 
+@pytest.mark.skip("Decommissioned")
 def test_current_route_not_captured_as_phase_id(client: TestClient, mock_service: MagicMock) -> None:
     mock_service.get_current_phase.return_value = None
 

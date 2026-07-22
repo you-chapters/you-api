@@ -113,16 +113,17 @@ class ApiStack(Stack):
             param.grant_read(embedding_fn)
 
         entries_table.grant_stream_read(embedding_fn)
-        embedding_fn.add_event_source(
-            lambda_event_sources.DynamoEventSource(
-                entries_table,
-                starting_position=lambda_.StartingPosition.LATEST,
-                batch_size=10,
-                bisect_batch_on_error=True,
-                on_failure=lambda_event_sources.SqsDlq(dlq),
-                max_record_age=Duration.hours(1),
-            )
-        )
+        # DECOMMISSIONED: stream trigger disabled — no embedding/tagging on new entries
+        # embedding_fn.add_event_source(
+        #     lambda_event_sources.DynamoEventSource(
+        #         entries_table,
+        #         starting_position=lambda_.StartingPosition.LATEST,
+        #         batch_size=10,
+        #         bisect_batch_on_error=True,
+        #         on_failure=lambda_event_sources.SqsDlq(dlq),
+        #         max_record_age=Duration.hours(1),
+        #     )
+        # )
 
         narrative_fn = PythonFunction(
             self,
@@ -170,29 +171,30 @@ class ApiStack(Stack):
         for param in ssm_params:
             param.grant_read(phase_fn)
 
-        events.Rule(
-            self, "WeeklyPhaseRule",
-            schedule=events.Schedule.cron(minute="15", hour="1", week_day="MON"),
-            targets=[targets.LambdaFunction(phase_fn)],
-        )
-
-        events.Rule(
-            self, "WeeklyNarrativeRule",
-            schedule=events.Schedule.cron(minute="55", hour="23", week_day="SUN"),
-            targets=[targets.LambdaFunction(
-                narrative_fn,
-                event=events.RuleTargetInput.from_object({"type": "week"}),
-            )],
-        )
-
-        events.Rule(
-            self, "MonthlyNarrativeRule",
-            schedule=events.Schedule.cron(minute="5", hour="0", day="1"),
-            targets=[targets.LambdaFunction(
-                narrative_fn,
-                event=events.RuleTargetInput.from_object({"type": "month"}),
-            )],
-        )
+        # DECOMMISSIONED: scheduled jobs disabled — no periodic LLM calls
+        # events.Rule(
+        #     self, "WeeklyPhaseRule",
+        #     schedule=events.Schedule.cron(minute="15", hour="1", week_day="MON"),
+        #     targets=[targets.LambdaFunction(phase_fn)],
+        # )
+        #
+        # events.Rule(
+        #     self, "WeeklyNarrativeRule",
+        #     schedule=events.Schedule.cron(minute="55", hour="23", week_day="SUN"),
+        #     targets=[targets.LambdaFunction(
+        #         narrative_fn,
+        #         event=events.RuleTargetInput.from_object({"type": "week"}),
+        #     )],
+        # )
+        #
+        # events.Rule(
+        #     self, "MonthlyNarrativeRule",
+        #     schedule=events.Schedule.cron(minute="5", hour="0", day="1"),
+        #     targets=[targets.LambdaFunction(
+        #         narrative_fn,
+        #         event=events.RuleTargetInput.from_object({"type": "month"}),
+        #     )],
+        # )
 
         authorizer = apigw.CognitoUserPoolsAuthorizer(
             self,
