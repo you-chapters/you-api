@@ -44,7 +44,6 @@ def http_client():
     app.dependency_overrides.clear()
 
 
-@pytest.mark.skip("Decommissioned")
 def test_create_entry_with_location_returns_null_tags(http_client) -> None:
     """Tags are null immediately after creation — they're filled in async by the Lambda."""
     response = http_client.post("/entries", json={"entry": "Met Alice in Central Park.", "location": "New York"})
@@ -55,7 +54,6 @@ def test_create_entry_with_location_returns_null_tags(http_client) -> None:
     assert data["tags"] is None
 
 
-@pytest.mark.skip("Decommissioned")
 def test_create_entry_location_is_optional(http_client) -> None:
     response = http_client.post("/entries", json={"entry": "Just a plain entry."})
 
@@ -64,7 +62,6 @@ def test_create_entry_location_is_optional(http_client) -> None:
     assert response.json()["tags"] is None
 
 
-@pytest.mark.skip("Decommissioned")
 def test_list_entries_includes_location_and_tags_fields(http_client) -> None:
     http_client.post("/entries", json={"entry": "Entry A", "location": "Paris"})
     http_client.post("/entries", json={"entry": "Entry B"})

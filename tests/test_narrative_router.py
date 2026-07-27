@@ -35,7 +35,6 @@ def client() -> TestClient:
     app.dependency_overrides.clear()
 
 
-@pytest.mark.skip("Decommissioned")
 def test_narrative_default_returns_current_week(client: TestClient) -> None:
     response = client.get("/entries/narrative")
 
@@ -48,7 +47,6 @@ def test_narrative_default_returns_current_week(client: TestClient) -> None:
     assert "generated_at" in data
 
 
-@pytest.mark.skip("Decommissioned")
 def test_narrative_second_call_is_cached(client: TestClient) -> None:
     client.get("/entries/narrative")
     response = client.get("/entries/narrative")
@@ -57,7 +55,6 @@ def test_narrative_second_call_is_cached(client: TestClient) -> None:
     assert response.json()["is_cached"] is True
 
 
-@pytest.mark.skip("Decommissioned")
 def test_narrative_force_refresh(client: TestClient) -> None:
     first = client.get("/entries/narrative").json()
     response = client.get("/entries/narrative?refresh=true")
@@ -68,7 +65,6 @@ def test_narrative_force_refresh(client: TestClient) -> None:
     assert data["generated_at"] >= first["generated_at"]
 
 
-@pytest.mark.skip("Decommissioned")
 def test_narrative_type_month(client: TestClient) -> None:
     response = client.get("/entries/narrative?type=month")
 
@@ -78,7 +74,6 @@ def test_narrative_type_month(client: TestClient) -> None:
     assert data["period_key"] == CURRENT_MONTH
 
 
-@pytest.mark.skip("Decommissioned")
 def test_narrative_explicit_past_week_key(client: TestClient) -> None:
     response = client.get("/entries/narrative?type=week&key=2025-W01")
 
@@ -87,14 +82,12 @@ def test_narrative_explicit_past_week_key(client: TestClient) -> None:
     assert data["period_key"] == "2025-W01"
 
 
-@pytest.mark.skip("Decommissioned")
 def test_narrative_invalid_type_returns_422(client: TestClient) -> None:
     response = client.get("/entries/narrative?type=invalid")
 
     assert response.status_code == 422
 
 
-@pytest.mark.skip("Decommissioned")
 def test_narrative_entry_count_in_response(client: TestClient) -> None:
     response = client.get("/entries/narrative")
 

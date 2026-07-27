@@ -13,9 +13,7 @@ def get_phases(
     user_id: str = Depends(get_current_user_id),
     service: PhaseService = Depends(get_phase_service),
 ) -> list[PhaseRecord]:
-    # DECOMMISSIONED
-    raise HTTPException(status_code=410, detail="Gone")
-    # return service.get_phases(user_id, refresh=refresh)
+    return service.get_phases(user_id, refresh=refresh)
 
 
 # /current must be declared before /{phase_id} to avoid being captured as a phase_id
@@ -24,9 +22,7 @@ def get_current_phase(
     user_id: str = Depends(get_current_user_id),
     service: PhaseService = Depends(get_phase_service),
 ) -> PhaseRecord | None:
-    # DECOMMISSIONED
-    raise HTTPException(status_code=410, detail="Gone")
-    # return service.get_current_phase(user_id)
+    return service.get_current_phase(user_id)
 
 
 @router.get("/{phase_id}", response_model=PhaseRecord)
