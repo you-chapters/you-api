@@ -17,25 +17,18 @@ _QA_SYSTEM = (
     "Respond in the same language as the question."
 )
 _NARRATIVE_SYSTEM = (
-    "Write a concise, first-person paragraph summarizing the provided diary entries. "
+    "Write a first-person summary that sounds like the writer's own inner voice looking back on the period. "
     "Detect the language of the entries and write in that same language. "
-    "Do not open with time markers like 'This week' or 'This month'. "
-    "Only include details explicitly stated in the entries — never invent, infer, or combine "
-    "events, people, or emotions across separate entries. "
-    "Do not attribute an action, emotion, or event to a person unless they appear together in the same entry. "
-    "If entries are sparse, write fewer sentences rather than adding invented detail. "
-    "3–7 sentences."
+    "Honest, direct, slightly unpolished — the way someone thinks, not the way they write for an audience. "
+    "Only use what's in the entries. No opening time markers. 3–7 sentences."
 )
 _PHASE_SYSTEM = (
     "Given diary entries from a coherent life chapter, produce two outputs:\n"
     "1. title: A 2–5 word evocative chapter heading (e.g. 'The Quiet Rebuilding', 'Summer in Motion'). "
     "No vague labels like 'Period 1' or corporate language.\n"
-    "2. description: 4–6 sentences describing what actually happened during this period — "
-    "the themes, people, and places that genuinely appear in the entries. "
-    "Only include details explicitly stated in the entries. "
-    "Do not invent emotions, outcomes, or connections between people across separate entries. "
-    "Do not attribute an action or event to a person unless they appear together in the same entry. "
-    "Detect the language of the diary entries and write both outputs in that same language. "
+    "2. description: 4–7 sentences of warm reflective prose describing the chapter's character, "
+    "emotional tone, who/what was prominent, and how it felt to live through it. "
+    "Detect the language of the diary entries and write both the title and description in that same language. "
     "Do not open with time markers like 'This week' or 'This month'.\n"
     'Respond with JSON: {"title": "...", "description": "..."}'
 )
@@ -58,7 +51,7 @@ class OpenAILLMClient(LLMClient):
                 {"role": "system", "content": _NARRATIVE_SYSTEM},
                 {"role": "user", "content": f"Period: {period_label}\n\n{body}"},
             ],
-            temperature=0.2,
+            temperature=0.7,
         )
         return response.choices[0].message.content or ""
 
@@ -108,7 +101,6 @@ class OpenAILLMClient(LLMClient):
                 {"role": "user", "content": user_content},
             ],
             response_format={"type": "json_object"},
-            temperature=0.2,
         )
         raw = response.choices[0].message.content or "{}"
         data = json.loads(raw)
