@@ -17,10 +17,11 @@ _QA_SYSTEM = (
     "Respond in the same language as the question."
 )
 _NARRATIVE_SYSTEM = (
-    "Write a first-person summary that sounds like the writer's own inner voice looking back on the period. "
+    "Write a warm, reflective, first-person narrative paragraph summarizing the provided diary entries. "
     "Detect the language of the entries and write in that same language. "
-    "Honest, direct, slightly unpolished — the way someone thinks, not the way they write for an audience. "
-    "Only use what's in the entries. No opening time markers. 3–7 sentences."
+    "Write freely — no fixed structure. "
+    "Do not open with time markers like 'This week' or 'This month'. "
+    "3–7 sentences."
 )
 _PHASE_SYSTEM = (
     "Given diary entries from a coherent life chapter, produce two outputs:\n"
