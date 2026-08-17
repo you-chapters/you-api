@@ -49,6 +49,11 @@ def _travel_entries(start_days_ago: int, count: int) -> list[Entry]:
     return [_entry(start_days_ago - i, topics=["travel", "food"]) for i in range(count)]
 
 
+def _two_phase_entries():
+    # 8 weeks work (days 112..57) then 8 weeks travel (days 56..1) = 16 windows, clear boundary
+    return _work_entries(112, 56) + _travel_entries(56, 56)
+
+
 # --- detect_and_store ---
 
 def test_no_entries_returns_empty():
@@ -62,17 +67,12 @@ def test_insufficient_history_returns_empty():
 
 
 def test_single_phase_stable_signal():
-    # 4 weeks of uniform work entries → should yield 1 phase
-    entries = _work_entries(27, 20)
+    # 9 weeks of uniform work entries → should yield 1 phase
+    entries = _work_entries(62, 30)
     result = _make_service(entries).detect_and_store(USER)
     assert len(result) == 1
     assert result[0].is_open is True
     assert result[0].end_date is None
-
-
-def _two_phase_entries():
-    # 3 weeks work (days 41..21) then 3 weeks travel (days 20..1) = 6 windows, clear boundary
-    return _work_entries(41, 21) + _travel_entries(20, 20)
 
 
 def test_two_phases_clear_topic_shift():
@@ -94,7 +94,7 @@ def test_phases_ordered_oldest_to_newest():
 
 
 def test_open_phase_has_null_end_date():
-    entries = _work_entries(27, 15)
+    entries = _work_entries(62, 30)
     result = _make_service(entries).detect_and_store(USER)
     open_phases = [p for p in result if p.is_open]
     assert len(open_phases) == 1
@@ -107,14 +107,14 @@ def test_closed_phase_has_end_date():
 
 
 def test_entry_count_correct():
-    entries = _work_entries(41, 12) + _travel_entries(27, 12)
+    entries = _work_entries(112, 25) + _travel_entries(56, 25)
     result = _make_service(entries).detect_and_store(USER)
     total = sum(p.entry_count for p in result)
-    assert total == 24
+    assert total == 50
 
 
 def test_phase_index_stored_after_detection():
-    entries = _work_entries(27, 15)
+    entries = _work_entries(62, 30)
     repo = InMemoryNarrativeRepository()
     svc = PhaseService(InMemoryEntryRepository(), repo, InMemoryLLMClient())
     for e in entries:
@@ -126,28 +126,23 @@ def test_phase_index_stored_after_detection():
 
 
 def test_sparse_micro_phase_merged():
-    # Create two solid phases with a micro-phase (1 window, 2 entries) sandwiched between them
-    # Phase A: 3 weeks work
-    phase_a = _work_entries(62, 12)
-    # Micro: 1 week travel (only 2 entries — below _MIN_ENTRIES=5)
-    micro = _travel_entries(41, 2)
-    # Phase B: 3 weeks work (same signal as A → merged into A, not B)
-    phase_b = _work_entries(27, 12)
+    # Two solid phases (8 windows, 56 entries each) with a sparse micro-phase between them.
+    # The micro should be absorbed into a neighbor; result should be exactly 2 phases.
+    phase_a = _work_entries(125, 56)
+    micro = _travel_entries(61, 2)
+    phase_b = _work_entries(55, 56)
     result = _make_service(phase_a + micro + phase_b).detect_and_store(USER)
-    # Micro phase should be absorbed; result should be fewer phases than raw boundaries suggest
-    # The micro has same-ish topic as neither A nor B clearly, but since it only has 2 entries it merges
-    assert all(p.entry_count >= 1 for p in result)
+    assert len(result) == 2
 
 
 def test_frozen_past_phase_not_regenerated():
-    # 3 weeks of work (days 55..35) followed immediately by 3 weeks of travel (days 34..14)
-    # The closed work phase ends ~5 weeks ago, which is past the 4-week freeze cutoff.
-    entries = _work_entries(55, 21) + _travel_entries(34, 21)
+    # Work phase: days 360..185 (176 entries, ~25 windows, ends ~185 days ago > 26-week cutoff).
+    # Travel phase: days 184..1 (184 entries, ~26 windows, current).
+    entries = _work_entries(360, 176) + _travel_entries(184, 184)
     entry_repo = InMemoryEntryRepository()
     for e in entries:
         entry_repo.save(e)
 
-    # First run: capture the two detected phases with known titles
     llm = MagicMock()
     llm.generate_phase.side_effect = [("Old Title", "Old desc."), ("Open Title", "Open desc.")]
     repo = InMemoryNarrativeRepository()
@@ -155,10 +150,9 @@ def test_frozen_past_phase_not_regenerated():
     assert len(first) == 2
     closed = first[0]
     assert closed.end_date is not None
-    freeze_cutoff = (_NOW - timedelta(weeks=4)).date().isoformat()
+    freeze_cutoff = (_NOW - timedelta(weeks=26)).date().isoformat()
     assert closed.end_date < freeze_cutoff, "Setup error: closed phase isn't old enough to be frozen"
 
-    # Second run: frozen phase must be reused; LLM called only for the open phase
     llm2 = MagicMock()
     llm2.generate_phase.return_value = ("Regenerated", "Regenerated desc.")
     second = PhaseService(entry_repo, repo, llm2).detect_and_store(USER)
@@ -170,7 +164,7 @@ def test_frozen_past_phase_not_regenerated():
 
 
 def test_open_phase_regenerated_on_rerun():
-    entries = _work_entries(27, 15)
+    entries = _work_entries(62, 30)
     llm = MagicMock()
     llm.generate_phase.side_effect = [
         ("First Run", "First description."),
@@ -193,14 +187,14 @@ def test_open_phase_regenerated_on_rerun():
 # --- get_phases ---
 
 def test_get_phases_triggers_lazy_detection():
-    entries = _work_entries(27, 15)
+    entries = _work_entries(62, 30)
     svc = _make_service(entries)
     result = svc.get_phases(USER)
     assert len(result) >= 1
 
 
 def test_get_phases_uses_cached_index():
-    entries = _work_entries(27, 15)
+    entries = _work_entries(62, 30)
     llm = MagicMock()
     llm.generate_phase.return_value = ("T", "D")
     repo = InMemoryNarrativeRepository()
@@ -216,7 +210,7 @@ def test_get_phases_uses_cached_index():
 
 
 def test_get_phases_refresh_reruns_detection():
-    entries = _work_entries(27, 15)
+    entries = _work_entries(62, 30)
     llm = MagicMock()
     llm.generate_phase.return_value = ("T", "D")
     repo = InMemoryNarrativeRepository()
@@ -234,7 +228,7 @@ def test_get_phases_refresh_reruns_detection():
 # --- get_current_phase ---
 
 def test_get_current_phase_returns_open():
-    entries = _work_entries(27, 15)
+    entries = _work_entries(62, 30)
     svc = _make_service(entries)
     current = svc.get_current_phase(USER)
     assert current is not None
@@ -249,7 +243,7 @@ def test_get_current_phase_none_when_no_phases():
 # --- get_phase by id ---
 
 def test_get_phase_by_id_returns_correct():
-    entries = _work_entries(27, 15)
+    entries = _work_entries(62, 30)
     svc = _make_service(entries)
     phases = svc.get_phases(USER)
     assert phases

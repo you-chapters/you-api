@@ -1,0 +1,19 @@
+@baseUrl = https://you.havryliuk.com
+@token =
+@phase_id = 9d9f4406-72e2-476b-ba01-c56739d29482
+
+### Get all phases (cached)
+GET {{baseUrl}}/phases
+Authorization: Bearer {{token}}
+
+### Get all phases (force re-detection)
+GET {{baseUrl}}/phases?refresh=true
+Authorization: Bearer {{token}}
+
+### Get current (open) phase
+GET {{baseUrl}}/phases/current
+Authorization: Bearer {{token}}
+
+### Get phase by ID
+GET {{baseUrl}}/phases/{{phase_id}}
+Authorization: Bearer {{token}}

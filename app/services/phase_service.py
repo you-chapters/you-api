@@ -2,7 +2,7 @@ import math
 import uuid
 from collections import Counter
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from app.llm.llm_client import LLMClient
 from app.models.entry import Entry
@@ -22,9 +22,10 @@ _MOOD_MAP: dict[str, float] = {
     "very negative": -2.0
 }
 _WINDOW_DAYS = 7
-_MIN_WINDOWS = 3
-_MIN_ENTRIES = 5
-_FREEZE_WEEKS = 4
+_MIN_WINDOWS = 3        # minimum total windows to attempt detection
+_MIN_PHASE_WINDOWS = 8  # minimum windows per phase (≈ 2 months)
+_MIN_PHASE_ENTRIES = 20 # minimum entries per phase
+_FREEZE_WEEKS = 26
 _SAMPLE_CHARS = 40_000
 
 
@@ -62,8 +63,23 @@ class PhaseService:
             return []
         self._compute_signals(windows, topics)
         boundaries = self._detect_boundaries(windows)
+
+        # Force a boundary at the day after the latest frozen phase's end_date so that
+        # entries in the gap period never get absorbed into a frozen phase group during merge.
+        freeze_split = self._find_freeze_split(user_id, windows)
+        if freeze_split is not None:
+            boundaries = sorted(set(boundaries) | {freeze_split})
+
         phase_groups = self._group_into_phases(windows, boundaries)
-        phase_groups = self._merge_sparse(phase_groups, topics)
+
+        if freeze_split is not None:
+            split_start = windows[freeze_split].start.date()
+            pre = [g for g in phase_groups if g[-1].start.date() < split_start]
+            post = [g for g in phase_groups if g[0].start.date() >= split_start]
+            phase_groups = self._merge_sparse(pre, topics) + self._merge_sparse(post, topics)
+        else:
+            phase_groups = self._merge_sparse(phase_groups, topics)
+
         if not phase_groups:
             return []
         return self._name_and_store(user_id, phase_groups)
@@ -82,6 +98,28 @@ class PhaseService:
             if phase.is_open:
                 return phase
         return None
+
+    def _find_freeze_split(self, user_id: str, windows: list[_Window]) -> int | None:
+        """Return the window index at which the active (non-frozen) period begins.
+
+        Loads stored phases, finds the latest frozen end_date, and returns the
+        index of the first window whose start >= that date + 1 day.  Returns None
+        when there are no frozen phases or the split would fall at index 0.
+        """
+        freeze_cutoff = (datetime.now(timezone.utc) - timedelta(weeks=_FREEZE_WEEKS)).date()
+        existing_index = self._narratives.get_phase_index(user_id)
+        existing_ids = existing_index.phase_ids if existing_index else []
+        existing_records = self._narratives.batch_get_phases(user_id, existing_ids) if existing_ids else []
+        frozen = [
+            r for r in existing_records
+            if r.end_date and date.fromisoformat(r.end_date) <= freeze_cutoff
+        ]
+        if not frozen:
+            return None
+        latest_end = max(date.fromisoformat(r.end_date) for r in frozen)
+        split_date = latest_end + timedelta(days=1)
+        idx = next((i for i, w in enumerate(windows) if w.start.date() >= split_date), None)
+        return idx if idx is not None and idx > 0 else None
 
     # --- Window building ---
 
@@ -217,7 +255,7 @@ class PhaseService:
             changed = False
             for i in range(len(phases)):
                 phase = phases[i]
-                if len(phase) >= _MIN_WINDOWS and sum(len(w.entries) for w in phase) >= _MIN_ENTRIES:
+                if len(phase) >= _MIN_PHASE_WINDOWS and sum(len(w.entries) for w in phase) >= _MIN_PHASE_ENTRIES:
                     continue
                 phase_vec = _avg_topic_vector(phase, topics)
                 if i == 0:
