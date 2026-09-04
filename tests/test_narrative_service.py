@@ -61,7 +61,7 @@ def test_force_refresh_regenerates():
     assert result.generated_at >= first.generated_at
 
 
-def test_week_stale_after_25h_regenerates():
+def test_week_stale_after_25h_returns_cached():
     from app.models.narrative import NarrativeSummary
     svc = _make_service()
     twenty_five_hours_ago = (datetime.now(timezone.utc) - timedelta(hours=25)).isoformat()
@@ -72,7 +72,8 @@ def test_week_stale_after_25h_regenerates():
     )
     svc._narratives.save(USER, f"cache#week#{CURRENT_WEEK}", record)
     result = svc.get_narrative(USER, "week", CURRENT_WEEK)
-    assert result.is_cached is False
+    assert result.is_cached is True
+    assert result.text == "old"
 
 
 def test_past_period_not_regenerated_even_if_old(monkeypatch):
@@ -150,7 +151,7 @@ def test_month_narrative_generated():
     assert result.is_cached is False
 
 
-def test_month_stale_last_week_regenerates():
+def test_month_stale_last_week_returns_cached():
     from app.models.narrative import NarrativeSummary
     svc = _make_service()
     last_week = datetime.now(timezone.utc) - timedelta(days=7)
@@ -161,7 +162,8 @@ def test_month_stale_last_week_regenerates():
     )
     svc._narratives.save(USER, f"cache#month#{CURRENT_MONTH}", cached)
     result = svc.get_narrative(USER, "month", CURRENT_MONTH)
-    assert result.is_cached is False
+    assert result.is_cached is True
+    assert result.text == "old narrative"
 
 
 def test_month_same_week_returns_cached():
