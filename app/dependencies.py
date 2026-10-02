@@ -14,8 +14,17 @@ from app.services.entry_service import EntryService
 from app.services.narrative_service import NarrativeService
 from app.services.phase_service import PhaseService
 from app.services.qa_service import QaService
+from app.usage_limiter import DynamoDBUsageLimiter, InMemoryUsageLimiter, UsageLimiter
 
 logger = get_logger(__name__)
+
+_AI_OPERATION_LIMITS = {
+    "create_entry": 30,
+    "search": 20,
+    "ask": 10,
+    "narrative_refresh": 5,
+    "phase_refresh": 2,
+}
 
 
 @lru_cache
@@ -65,6 +74,13 @@ def _narrative_repository() -> NarrativeRepository:
     return InMemoryNarrativeRepository()
 
 
+@lru_cache
+def _usage_limiter() -> UsageLimiter:
+    if table_name := os.getenv("AI_RATE_LIMITS_TABLE_NAME"):
+        return DynamoDBUsageLimiter(table_name, _AI_OPERATION_LIMITS)
+    return InMemoryUsageLimiter(_AI_OPERATION_LIMITS)
+
+
 def get_entry_service() -> EntryService:
     return EntryService(_repository(), _embedding_client(), _vector_repository())
 
@@ -79,6 +95,10 @@ def get_narrative_service() -> NarrativeService:
 
 def get_phase_service() -> PhaseService:
     return PhaseService(_repository(), _narrative_repository(), _llm_client())
+
+
+def get_usage_limiter() -> UsageLimiter:
+    return _usage_limiter()
 
 
 def get_current_user_id(request: Request) -> str:

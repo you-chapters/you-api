@@ -5,7 +5,7 @@ from app.models.entry_tags import EntryTags
 
 class CreateEntryRequest(BaseModel):
     entry: str = Field(max_length=10_000)
-    location: str | None = None
+    location: str | None = Field(default=None, max_length=256)
 
 
 class Entry(BaseModel):
@@ -13,7 +13,7 @@ class Entry(BaseModel):
     timestamp: str
     entry_id: str
     entry: str = Field(max_length=10_000)
-    location: str | None = None
+    location: str | None = Field(default=None, max_length=256)
     tags: EntryTags | None = None
 
 

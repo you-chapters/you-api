@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.dependencies import get_current_user_id, get_phase_service
+from app.dependencies import get_current_user_id, get_phase_service, get_usage_limiter
 from app.models.phase import PhaseRecord
 from app.services.phase_service import PhaseService
+from app.usage_limiter import UsageLimiter
 
 router = APIRouter(prefix="/phases", tags=["phases"])
 
@@ -12,7 +13,10 @@ def get_phases(
     refresh: bool = False,
     user_id: str = Depends(get_current_user_id),
     service: PhaseService = Depends(get_phase_service),
+    limiter: UsageLimiter = Depends(get_usage_limiter),
 ) -> list[PhaseRecord]:
+    if refresh and not limiter.allow(user_id, "phase_refresh"):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded. Please try again later.")
     return service.get_phases(user_id, refresh=refresh)
 
 
