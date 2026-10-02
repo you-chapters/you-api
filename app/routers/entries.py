@@ -49,6 +49,7 @@ def get_narrative(
     refresh: bool = False,
     user_id: str = Depends(get_current_user_id),
     service: NarrativeService = Depends(get_narrative_service),
+    limiter: UsageLimiter = Depends(get_usage_limiter),
 ) -> NarrativeSummary:
     if type not in ("week", "month"):
         raise HTTPException(status_code=422, detail="type must be 'week' or 'month'")
