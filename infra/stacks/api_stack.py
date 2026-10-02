@@ -60,6 +60,7 @@ class ApiStack(Stack):
                 "REPOSITORY_TYPE": "dynamodb",
                 "ENTRIES_TABLE_NAME": entries_table.table_name,
                 "NARRATIVES_TABLE_NAME": narratives_table.table_name,
+                "AI_RATE_LIMITS_TABLE_NAME": self.node.try_get_context("aiRateLimitsTableName") or "ai_rate_limits",
                 "EMBEDDING_TYPE": "openai",
                 "VECTOR_REPOSITORY_TYPE": "pinecone",
                 "LLM_TYPE": "openai",
@@ -174,7 +175,6 @@ class ApiStack(Stack):
             self, "WeeklyPhaseRule",
             schedule=events.Schedule.cron(minute="15", hour="1", week_day="MON"),
             targets=[targets.LambdaFunction(phase_fn)],
-            enabled=False,
         )
 
         events.Rule(
@@ -184,7 +184,6 @@ class ApiStack(Stack):
                 narrative_fn,
                 event=events.RuleTargetInput.from_object({"type": "week"}),
             )],
-            enabled=False,
         )
 
         events.Rule(
@@ -194,7 +193,6 @@ class ApiStack(Stack):
                 narrative_fn,
                 event=events.RuleTargetInput.from_object({"type": "month"}),
             )],
-            enabled=False,
         )
 
         authorizer = apigw.CognitoUserPoolsAuthorizer(
