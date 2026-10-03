@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from pathlib import Path
 
 from aws_cdk import Duration, Stack
@@ -20,9 +21,16 @@ from constructs import Construct
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
+@dataclass
+class ApiStackProps:
+    entries_table: dynamodb.Table
+    narratives_table: dynamodb.Table
+    ai_rate_limits_table: dynamodb.Table
+    user_pool: cognito.UserPool
+
+
 class ApiStack(Stack):
-    def __init__(self, scope: Construct, construct_id: str, *, entries_table: dynamodb.Table,
-                 narratives_table: dynamodb.Table, user_pool: cognito.UserPool, **kwargs) -> None:
+    def __init__(self, scope: Construct, construct_id: str, *, props: ApiStackProps, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
         _SSM_OPENAI = "/you-api/openai-api-key"
@@ -58,8 +66,8 @@ class ApiStack(Stack):
             timeout=Duration.seconds(30),
             environment={
                 "REPOSITORY_TYPE": "dynamodb",
-                "ENTRIES_TABLE_NAME": entries_table.table_name,
-                "NARRATIVES_TABLE_NAME": narratives_table.table_name,
+                "ENTRIES_TABLE_NAME": props.entries_table.table_name,
+                "NARRATIVES_TABLE_NAME": props.narratives_table.table_name,
                 "AI_RATE_LIMITS_TABLE_NAME": self.node.try_get_context("aiRateLimitsTableName") or "ai_rate_limits",
                 "EMBEDDING_TYPE": "openai",
                 "VECTOR_REPOSITORY_TYPE": "pinecone",
@@ -68,8 +76,9 @@ class ApiStack(Stack):
             },
         )
 
-        entries_table.grant_read_write_data(fn)
-        narratives_table.grant_read_write_data(fn)
+        props.entries_table.grant_read_write_data(fn)
+        props.narratives_table.grant_read_write_data(fn)
+        props.ai_rate_limits_table.grant_read_write_data(fn)
         for param in ssm_params:
             param.grant_read(fn)
 
@@ -83,13 +92,13 @@ class ApiStack(Stack):
             memory_size=512,
             timeout=Duration.seconds(60),
             environment={
-                "ENTRIES_TABLE_NAME": entries_table.table_name,
+                "ENTRIES_TABLE_NAME": props.entries_table.table_name,
                 "TAG_EXTRACTION_TYPE": "openai",
                 **shared_env,
             },
         )
 
-        entries_table.grant_write_data(embedding_fn)
+        props.entries_table.grant_write_data(embedding_fn)
 
         dlq = sqs.Queue(
             self,
@@ -113,10 +122,10 @@ class ApiStack(Stack):
         for param in ssm_params:
             param.grant_read(embedding_fn)
 
-        entries_table.grant_stream_read(embedding_fn)
+        props.entries_table.grant_stream_read(embedding_fn)
         embedding_fn.add_event_source(
             lambda_event_sources.DynamoEventSource(
-                entries_table,
+                props.entries_table,
                 starting_position=lambda_.StartingPosition.LATEST,
                 batch_size=10,
                 bisect_batch_on_error=True,
@@ -136,15 +145,15 @@ class ApiStack(Stack):
             timeout=Duration.minutes(5),
             environment={
                 "REPOSITORY_TYPE": "dynamodb",
-                "ENTRIES_TABLE_NAME": entries_table.table_name,
-                "NARRATIVES_TABLE_NAME": narratives_table.table_name,
+                "ENTRIES_TABLE_NAME": props.entries_table.table_name,
+                "NARRATIVES_TABLE_NAME": props.narratives_table.table_name,
                 "LLM_TYPE": "openai",
                 **shared_env,
             },
         )
 
-        entries_table.grant_read_data(narrative_fn)
-        narratives_table.grant_read_write_data(narrative_fn)
+        props.entries_table.grant_read_data(narrative_fn)
+        props.narratives_table.grant_read_write_data(narrative_fn)
         for param in ssm_params:
             param.grant_read(narrative_fn)
 
@@ -159,15 +168,15 @@ class ApiStack(Stack):
             timeout=Duration.minutes(5),
             environment={
                 "REPOSITORY_TYPE": "dynamodb",
-                "ENTRIES_TABLE_NAME": entries_table.table_name,
-                "NARRATIVES_TABLE_NAME": narratives_table.table_name,
+                "ENTRIES_TABLE_NAME": props.entries_table.table_name,
+                "NARRATIVES_TABLE_NAME": props.narratives_table.table_name,
                 "LLM_TYPE": "openai",
                 **shared_env,
             },
         )
 
-        entries_table.grant_read_data(phase_fn)
-        narratives_table.grant_read_write_data(phase_fn)
+        props.entries_table.grant_read_data(phase_fn)
+        props.narratives_table.grant_read_write_data(phase_fn)
         for param in ssm_params:
             param.grant_read(phase_fn)
 
@@ -198,7 +207,7 @@ class ApiStack(Stack):
         authorizer = apigw.CognitoUserPoolsAuthorizer(
             self,
             "YouApiAuthorizer",
-            cognito_user_pools=[user_pool],
+            cognito_user_pools=[props.user_pool],
         )
 
         apigw.LambdaRestApi(
