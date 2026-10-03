@@ -46,6 +46,7 @@ class DynamoDBStack(Stack):
         self.ai_rate_limits_table = dynamodb.Table(
             self,
             "AiRateLimitsTable",
+            table_name="ai_rate_limits",
             partition_key=dynamodb.Attribute(name="user_id", type=dynamodb.AttributeType.STRING),
             sort_key=dynamodb.Attribute(name="bucket", type=dynamodb.AttributeType.STRING),
             billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,

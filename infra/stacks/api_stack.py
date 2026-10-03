@@ -68,7 +68,7 @@ class ApiStack(Stack):
                 "REPOSITORY_TYPE": "dynamodb",
                 "ENTRIES_TABLE_NAME": props.entries_table.table_name,
                 "NARRATIVES_TABLE_NAME": props.narratives_table.table_name,
-                "AI_RATE_LIMITS_TABLE_NAME": self.node.try_get_context("aiRateLimitsTableName") or "ai_rate_limits",
+                "AI_RATE_LIMITS_TABLE_NAME": props.ai_rate_limits_table.table_name,
                 "EMBEDDING_TYPE": "openai",
                 "VECTOR_REPOSITORY_TYPE": "pinecone",
                 "LLM_TYPE": "openai",
