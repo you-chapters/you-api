@@ -32,7 +32,7 @@ class NarrativeService:
 
         if not force_refresh:
             cached = self._narratives.get(user_id, record_id)
-            if cached:
+            if cached and not (is_current and self._is_stale(period_type, cached.generated_at)):
                 return cached.model_copy(update={"is_cached": True})
 
         entries = self._entries_for_period(user_id, period_type, period_key)
