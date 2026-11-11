@@ -1,6 +1,5 @@
-import json
-
 from openai import OpenAI
+from pydantic import BaseModel
 
 from app.config import get_secret
 from app.llm.llm_client import LLMClient
@@ -32,6 +31,11 @@ _PHASE_SYSTEM = (
     "Detect the language of the diary entries and write both the title and description in that same language. "
     "Do not open with time markers like 'This week' or 'This month'."
 )
+
+
+class _PhaseResponse(BaseModel):
+    title: str
+    description: str
 
 
 class OpenAILLMClient(LLMClient):
@@ -93,14 +97,15 @@ class OpenAILLMClient(LLMClient):
             for e in sorted(entries, key=lambda e: e.timestamp)
         )
         user_content = f"Signals: {signals_summary}\nCharacter hint: {hint}\n\n{body}"
-        response = self._client.chat.completions.create(
+        response = self._client.beta.chat.completions.parse(
             model=_PHASE_MODEL,
             messages=[
                 {"role": "system", "content": _PHASE_SYSTEM},
                 {"role": "user", "content": user_content},
             ],
-            response_format={"type": "json_object"},
+            response_format=_PhaseResponse,
         )
-        raw = response.choices[0].message.content or "{}"
-        data = json.loads(raw)
-        return data.get("title", "Unnamed Chapter"), data.get("description", "")
+        result = response.choices[0].message.parsed
+        if result is None:
+            return "Unnamed Chapter", ""
+        return result.title, result.description
