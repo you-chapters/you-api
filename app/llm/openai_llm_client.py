@@ -51,7 +51,6 @@ class OpenAILLMClient(LLMClient):
                 {"role": "system", "content": _NARRATIVE_SYSTEM},
                 {"role": "user", "content": f"Period: {period_label}\n\n{body}"},
             ],
-            temperature=0.7,
         )
         return response.choices[0].message.content or ""
 
