@@ -6,9 +6,9 @@ from app.config import get_secret
 from app.llm.llm_client import LLMClient
 from app.models.entry import Entry
 
-_NARRATIVE_MODEL = "gpt-4o-mini"
-_PHASE_MODEL = "gpt-4o"
-_QA_MODEL = "gpt-4o-mini"
+_NARRATIVE_MODEL = "gpt-6-luna"
+_PHASE_MODEL = "gpt-6.1-terra"
+_QA_MODEL = "gpt-6-luna"
 _QA_SYSTEM = (
     "You are a personal memory assistant. "
     "Answer the user's question ONLY using information explicitly found in the journal entries provided below. "
@@ -17,7 +17,7 @@ _QA_SYSTEM = (
     "Respond in the same language as the question."
 )
 _NARRATIVE_SYSTEM = (
-    "Write a warm, reflective, first-person narrative paragraph summarizing the provided diary entries. "
+    "Write a first-person narrative paragraph summarizing the provided diary entries. "
     "Detect the language of the entries and write in that same language. "
     "Write freely — no fixed structure. "
     "Do not open with time markers like 'This week' or 'This month'. "
@@ -25,13 +25,12 @@ _NARRATIVE_SYSTEM = (
 )
 _PHASE_SYSTEM = (
     "Given diary entries from a coherent life chapter, produce two outputs:\n"
-    "1. title: A 2–5 word evocative chapter heading (e.g. 'The Quiet Rebuilding', 'Summer in Motion'). "
+    "1. title: A 2–5 word figurative chapter heading. "
     "No vague labels like 'Period 1' or corporate language.\n"
     "2. description: 4–7 sentences of warm reflective prose describing the chapter's character, "
     "emotional tone, who/what was prominent, and how it felt to live through it. "
     "Detect the language of the diary entries and write both the title and description in that same language. "
-    "Do not open with time markers like 'This week' or 'This month'.\n"
-    'Respond with JSON: {"title": "...", "description": "..."}'
+    "Do not open with time markers like 'This week' or 'This month'."
 )
 
 
