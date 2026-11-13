@@ -16,7 +16,7 @@ _QA_SYSTEM = (
     "Respond in the same language as the question."
 )
 _NARRATIVE_SYSTEM = (
-    "Write a first-person narrative paragraph summarizing the provided diary entries. "
+    "Write a warm, reflective, first-person narrative paragraph summarizing the provided diary entries. "
     "Detect the language of the entries and write in that same language. "
     "Write freely — no fixed structure. "
     "Do not open with time markers like 'This week' or 'This month'. "
