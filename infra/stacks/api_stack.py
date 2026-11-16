@@ -184,6 +184,7 @@ class ApiStack(Stack):
             self, "WeeklyPhaseRule",
             schedule=events.Schedule.cron(minute="15", hour="1", week_day="MON"),
             targets=[targets.LambdaFunction(phase_fn)],
+            enabled=False,
         )
 
         events.Rule(
@@ -193,6 +194,7 @@ class ApiStack(Stack):
                 narrative_fn,
                 event=events.RuleTargetInput.from_object({"type": "week"}),
             )],
+            enabled=False,
         )
 
         events.Rule(
@@ -202,6 +204,7 @@ class ApiStack(Stack):
                 narrative_fn,
                 event=events.RuleTargetInput.from_object({"type": "month"}),
             )],
+            enabled=False,
         )
 
         authorizer = apigw.CognitoUserPoolsAuthorizer(
